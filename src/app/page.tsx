@@ -37,9 +37,9 @@ interface AnalysisResult {
 }
 
 const SAMPLE_VINS = [
-  { label: '2021 Toyota Camry', vin: '4T1B11HK5MU000001' },
-  { label: '2019 Audi A3', vin: 'WAUBFGFF9KA000001' },
-  { label: '2022 Honda Civic', vin: '19XFE2F52NE000001' },
+  { label: '2020 Toyota Camry', vin: '4T1B11HK4LU123456' },
+  { label: '2017 Honda Accord', vin: '1HGCR2F83HA000000' },
+  { label: '2021 Ford F-150', vin: '1FTFW1ED5MFA00001' },
 ];
 
 export default function Home() {
@@ -231,7 +231,7 @@ export default function Home() {
                     maxLength={17}
                     value={vin}
                     onChange={(e) => handleVinLookup(e.target.value)}
-                    placeholder="Enter 17-character VIN (e.g. 4T1B11HK5MU000001)"
+                    placeholder="Enter 17-character VIN (e.g. 4T1B11HK4LU123456)"
                     className="w-full px-4 py-3.5 bg-slate-50 border border-slate-300 rounded-xl font-mono text-base tracking-wider uppercase focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">

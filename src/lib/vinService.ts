@@ -16,7 +16,6 @@ export function vinChecksumValid(vin?: string | null): boolean {
   if (!vin || vin.length !== 17) return false;
   const cleanVin = vin.toUpperCase();
 
-  // Standard VIN characters exclude I, O, Q to avoid confusion with 1 and 0
   if (/[IOQ]/.test(cleanVin)) return false;
 
   const letterValues: Record<string, number> = {
@@ -58,11 +57,8 @@ export async function decodeVinWithNhtsa(vin: string): Promise<DecodedVehicle | 
     const data = await res.json();
     const result = data.Results?.[0];
 
-    if (!result || !result.Make || result.ErrorCode !== "0") {
-      // If error code is not 0, still check if Make & Model are populated
-      if (!result?.Make || !result?.Model) {
-        return null;
-      }
+    if (!result || !result.Make) {
+      return null;
     }
 
     const year = parseInt(result.ModelYear, 10);
@@ -70,7 +66,7 @@ export async function decodeVinWithNhtsa(vin: string): Promise<DecodedVehicle | 
     return {
       vin: cleanVin,
       make: result.Make,
-      model: result.Model,
+      model: result.Model || result.Series || (result.BodyClass ? `${result.BodyClass} Series` : "Vehicle"),
       year: isNaN(year) ? new Date().getFullYear() : year,
       trim: result.Series || result.Trim || undefined,
       bodyClass: result.BodyClass || undefined,
