@@ -1,14 +1,14 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "AI Car Damage Assessment",
-  description: "AI-powered vehicle damage assessment tool.",
+  title: "CarFix US — AI Auto Collision Estimator & VIN Recognition",
+  description: "US auto collision damage assessment, VIN vehicle decoding, and OEM parts estimating.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="antialiased min-h-screen bg-gray-50 text-gray-900">{children}</body>
+      <body className="antialiased min-h-screen bg-slate-50 text-slate-900">{children}</body>
     </html>
   );
 }
