@@ -217,6 +217,7 @@ export async function POST(request: Request) {
         effectiveYear,
         finding.partName
       );
+      const isResolved = Boolean(oemNumber);
 
       return {
         id: `f_${Date.now()}_${index}`,
@@ -231,10 +232,10 @@ export async function POST(request: Request) {
         laborCost: estimate.laborCost,
         laborRate: 95,
         oemNumber: oemNumber,
-        oemStatus: "RESOLVED",
-        oemNote: discrepancyReport.hasDiscrepancy
-          ? `Matched for photo-identified ${effectiveMake} (VIN mismatch flagged)`
-          : null
+        oemStatus: isResolved ? "RESOLVED" : "PENDING",
+        oemNote: isResolved
+          ? (discrepancyReport.hasDiscrepancy ? `Matched for photo-identified ${effectiveMake} (VIN mismatch flagged)` : null)
+          : "OEM lookup pending — live catalog API required"
       };
     });
 

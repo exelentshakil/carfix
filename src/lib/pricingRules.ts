@@ -365,19 +365,24 @@ export function calculateCostEstimate(partName: string, severity: DamageSeverity
 }
 
 /**
- * Intelligent OEM part resolver with authentic manufacturer syntax fallbacks
+ * Verified OEM part resolver.
+ * Looks up verified OEM part numbers from catalog registries.
+ * If no verified OEM part exists in the catalog, returns null (PENDING).
+ * Strictly complies with PRD: never fabricates or guesses part numbers.
  */
 export function lookupOemPart(
   make?: string | null,
   model?: string | null,
   year?: number | string | null,
   partName?: string | null
-): string {
-  if (!make || !partName) return "OEM-52110-SPEC";
+): string | null {
+  if (!make || !partName) return null;
 
   const normalizedMake = make.trim().toLowerCase();
   const normalizedModel = (model || "").trim().toLowerCase();
   const normalizedKey = normalizePartName(partName);
+
+  if (normalizedKey === "default") return null;
 
   // 1. Direct Make + Model lookup
   for (const [key, parts] of Object.entries(OEM_CATALOG_REGISTRY)) {
@@ -399,75 +404,6 @@ export function lookupOemPart(
     }
   }
 
-  // 3. Realistic Manufacturer Standard Syntax Generator (Never leave "PENDING VERIFICATION")
-  const hash = Math.abs((normalizedMake + (normalizedModel || "") + normalizedKey).split("").reduce((a, b) => {
-    return ((a << 5) - a) + b.charCodeAt(0) | 0;
-  }, 0));
-  const num5 = String(10000 + (hash % 89999));
-  const num4 = String(1000 + (hash % 8999));
-  const num3 = String(100 + (hash % 899));
-
-  if (normalizedMake.includes("toyota") || normalizedMake.includes("lexus")) {
-    const prefixMap: Record<string, string> = {
-      bumper_front: "52119",
-      bumper_rear: "52159",
-      grille: "53101",
-      headlight: "81110",
-      taillight: "81550",
-      fender: "53802",
-      hood: "53301",
-      mirror: "87940",
-      suspension: "48068",
-      wheel: "42611",
-      glass: "56101"
-    };
-    const prefix = prefixMap[normalizedKey] || "53800";
-    return `${prefix}-0${num4.substring(0, 4)}`;
-  }
-
-  if (normalizedMake.includes("bmw")) {
-    const prefixMap: Record<string, string> = {
-      bumper_front: "51-11",
-      bumper_rear: "51-12",
-      grille: "51-13",
-      headlight: "63-11",
-      taillight: "63-21",
-      fender: "41-00",
-      hood: "41-00",
-      mirror: "51-16",
-      suspension: "31-12",
-      wheel: "36-11"
-    };
-    const prefix = prefixMap[normalizedKey] || "51-71";
-    return `${prefix}-${num3.substring(0, 1)}-${num3}-${num3}`;
-  }
-
-  if (normalizedMake.includes("cadillac") || normalizedMake.includes("chevrolet") || normalizedMake.includes("gmc") || normalizedMake.includes("buick")) {
-    return `84${num5}1`;
-  }
-
-  if (normalizedMake.includes("honda") || normalizedMake.includes("acura")) {
-    const prefixMap: Record<string, string> = {
-      bumper_front: "04711",
-      bumper_rear: "04715",
-      grille: "71121",
-      headlight: "33100",
-      taillight: "33500",
-      fender: "60211",
-      hood: "60100",
-      suspension: "51360"
-    };
-    const prefix = prefixMap[normalizedKey] || "71100";
-    return `${prefix}-T${num3.substring(0, 2)}-A01`;
-  }
-
-  if (normalizedMake.includes("ford") || normalizedMake.includes("lincoln")) {
-    return `ML3Z-${num4}-A`;
-  }
-
-  if (normalizedMake.includes("audi") || normalizedMake.includes("volkswagen") || normalizedMake.includes("vw")) {
-    return `8V0-${num3}-${num3}-A`;
-  }
-
-  return `OEM-${num5}`;
+  // Unresolved: return null — never fabricate fake part numbers
+  return null;
 }

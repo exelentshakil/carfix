@@ -714,7 +714,7 @@ export default function Home() {
               <div className="flex items-center gap-4 text-[11px] text-slate-400 dark:text-slate-500 font-mono">
                 <span>NHTSA vPIC: 200 OK</span>
                 <span>•</span>
-                <span>OEM Catalog: 100% Synced</span>
+                <span>OEM Catalog: Seeded + Live API Pending</span>
                 <span>•</span>
                 <span>Labor Rate: $95.00/hr</span>
               </div>
@@ -1029,7 +1029,9 @@ export default function Home() {
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[11px]">OEM Parts Catalog</span>
-                    <span className="font-bold text-emerald-400 text-sm">Active Resolution</span>
+                    <span className="font-bold text-emerald-400 text-sm">
+                      {result.findings.filter(f => f.oemStatus === "RESOLVED" && f.oemNumber).length} / {result.findings.length} Verified
+                    </span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[11px]">Damaged Components</span>
@@ -1099,20 +1101,33 @@ export default function Home() {
 
                       {/* COMPONENT BREAKDOWN ROW: OEM PART & TRANSPARENT PRICING FORMULA */}
                       <div className="pl-10 pt-3 border-t border-slate-100 dark:border-slate-800/80 print:border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 print:text-slate-600">OEM Part:</span>
-                          <span className="font-mono text-xs font-bold bg-slate-100 dark:bg-slate-950 print:bg-slate-100 text-blue-600 dark:text-blue-400 print:text-slate-900 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700/80 print:border-slate-300">
-                            {finding.oemNumber || '52119-0X938'}
-                          </span>
-                          <span className="text-emerald-600 dark:text-emerald-400 print:text-emerald-700 text-xs font-bold flex items-center gap-1">
-                            ✓ OEM Verified
-                          </span>
-                          {finding.oemNote && (
-                            <span className="text-[11px] text-amber-600 dark:text-amber-400 print:text-amber-700 italic">
-                              ({finding.oemNote})
+                        {finding.oemStatus === "RESOLVED" && finding.oemNumber ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-slate-500 dark:text-slate-400 print:text-slate-600">OEM Part:</span>
+                            <span className="font-mono text-xs font-bold bg-slate-100 dark:bg-slate-950 print:bg-slate-100 text-blue-600 dark:text-blue-400 print:text-slate-900 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700/80 print:border-slate-300">
+                              {finding.oemNumber}
                             </span>
-                          )}
-                        </div>
+                            <span className="text-emerald-600 dark:text-emerald-400 print:text-emerald-700 text-xs font-bold flex items-center gap-1">
+                              ✓ OEM Verified
+                            </span>
+                            {finding.oemNote && (
+                              <span className="text-[11px] text-amber-600 dark:text-amber-400 print:text-amber-700 italic">
+                                ({finding.oemNote})
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60">
+                              <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                              </span>
+                              <span className="font-semibold">OEM looking for...</span>
+                              <span className="text-[10px] text-amber-600/80 dark:text-amber-400/80 font-normal hidden sm:inline">(Pending Live API)</span>
+                            </span>
+                          </div>
+                        )}
 
                         {/* HOW THIS PRICE WAS PRODUCED (TRANSPARENT FORMULA BREAKDOWN) */}
                         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 print:text-slate-600 bg-slate-50 dark:bg-slate-950/90 print:bg-slate-50 border border-slate-200 dark:border-slate-800 print:border-slate-200 px-3 py-1.5 rounded-lg">
@@ -1400,8 +1415,19 @@ export default function Home() {
                               </span>
                             </td>
                             <td className="py-1 px-2 border-r border-slate-300 font-mono text-[9.5px]">
-                              <span className="font-bold text-slate-950">{finding.oemNumber || '52119-0X938'}</span>
-                              <span className="text-[8px] text-emerald-700 block font-sans font-bold">✓ OEM Verified</span>
+                              {finding.oemStatus === "RESOLVED" && finding.oemNumber ? (
+                                <>
+                                  <span className="font-bold text-slate-950">{finding.oemNumber}</span>
+                                  <span className="text-[8px] text-emerald-700 block font-sans font-bold">✓ OEM Verified</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="font-semibold text-amber-800 text-[9px] bg-amber-100/80 px-1.5 py-0.5 rounded border border-amber-300 block text-center">
+                                    OEM looking for...
+                                  </span>
+                                  <span className="text-[7.5px] text-slate-500 block font-sans text-center mt-0.5">Pending Live API</span>
+                                </>
+                              )}
                             </td>
                             <td className="py-1 px-2 border-r border-slate-300 text-slate-800 leading-snug">
                               {finding.description}
