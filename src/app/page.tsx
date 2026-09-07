@@ -1102,7 +1102,7 @@ export default function Home() {
                       {/* COMPONENT BREAKDOWN ROW: OEM PART & TRANSPARENT PRICING FORMULA */}
                       <div className="pl-10 pt-3 border-t border-slate-100 dark:border-slate-800/80 print:border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         {finding.oemStatus === "RESOLVED" && finding.oemNumber ? (
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex items-center gap-2">
                             <span className="text-xs font-medium text-slate-500 dark:text-slate-400 print:text-slate-600">OEM Part:</span>
                             <span className="font-mono text-xs font-bold bg-slate-100 dark:bg-slate-950 print:bg-slate-100 text-blue-600 dark:text-blue-400 print:text-slate-900 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700/80 print:border-slate-300">
                               {finding.oemNumber}
@@ -1115,35 +1115,17 @@ export default function Home() {
                                 ({finding.oemNote})
                               </span>
                             )}
-                            <a
-                              href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(finding.oemNumber)}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline bg-blue-50 dark:bg-blue-950/60 px-2 py-0.5 rounded border border-blue-200 dark:border-blue-900/60 print:hidden ml-1 transition-colors"
-                              title="View real OEM parts on eBay Motors"
-                            >
-                              <span>View Offers ↗</span>
-                            </a>
                           </div>
                         ) : (
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className="flex items-center gap-2">
                             <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60">
                               <span className="relative flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
                               </span>
                               <span className="font-semibold">OEM looking for...</span>
-                              <span className="text-[10px] text-amber-600/80 dark:text-amber-400/80 font-normal hidden sm:inline">(Pending Live API)</span>
+                              <span className="text-[10px] text-amber-600/80 dark:text-amber-400/80 font-normal hidden sm:inline">(Pending Verification)</span>
                             </span>
-                            <a
-                              href={`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(`${result.year || ""} ${result.make || ""} ${result.model || ""} ${finding.name} OEM`.trim())}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 hover:underline bg-amber-50/80 dark:bg-amber-950/40 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-900/60 print:hidden ml-1 transition-colors"
-                              title="Search matching parts on eBay Motors"
-                            >
-                              <span>Search Offers ↗</span>
-                            </a>
                           </div>
                         )}
 
