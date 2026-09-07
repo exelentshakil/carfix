@@ -49,6 +49,26 @@ const PRICING_MATRIX: Record<string, Record<DamageSeverity, PricingRule>> = {
     MODERATE: { baseCost: 350, laborHours: 1.5 },
     SEVERE: { baseCost: 750, laborHours: 2 }
   },
+  wheel: {
+    LIGHT: { baseCost: 150, laborHours: 1 },
+    MODERATE: { baseCost: 380, laborHours: 2 },
+    SEVERE: { baseCost: 850, laborHours: 3 }
+  },
+  mirror: {
+    LIGHT: { baseCost: 90, laborHours: 1 },
+    MODERATE: { baseCost: 280, laborHours: 2 },
+    SEVERE: { baseCost: 620, laborHours: 3 }
+  },
+  glass: {
+    LIGHT: { baseCost: 120, laborHours: 1.5 },
+    MODERATE: { baseCost: 450, laborHours: 3 },
+    SEVERE: { baseCost: 950, laborHours: 4 }
+  },
+  frame: {
+    LIGHT: { baseCost: 400, laborHours: 5 },
+    MODERATE: { baseCost: 1100, laborHours: 12 },
+    SEVERE: { baseCost: 2400, laborHours: 22 }
+  },
   default: {
     LIGHT: { baseCost: 180, laborHours: 2 },
     MODERATE: { baseCost: 480, laborHours: 5 },
@@ -57,6 +77,65 @@ const PRICING_MATRIX: Record<string, Record<DamageSeverity, PricingRule>> = {
 };
 
 const OEM_CATALOG_REGISTRY: Record<string, Record<string, string>> = {
+  "cadillac_escalade": {
+    bumper_front: "84869550",
+    bumper_rear: "84869552",
+    fender: "84869554",
+    hood: "84869556",
+    headlight: "84869558",
+    grille: "84869560",
+    taillight: "84869562",
+    mirror: "84869564",
+    wheel: "84869566"
+  },
+  "cadillac_ct5": {
+    bumper_front: "84651201",
+    bumper_rear: "84651203",
+    fender: "84651205",
+    hood: "84651207",
+    headlight: "84651209",
+    grille: "84651211",
+    taillight: "84651213"
+  },
+  "cadillac_general": {
+    bumper_front: "84869550",
+    fender: "84869554",
+    hood: "84869556",
+    headlight: "84869558",
+    grille: "84869560"
+  },
+  "bmw_3-series": {
+    bumper_front: "51-11-8-092-159",
+    bumper_rear: "51-12-8-092-161",
+    fender: "41-00-7-438-441",
+    hood: "41-00-7-443-487",
+    headlight: "63-11-8-496-159",
+    grille: "51-13-8-072-085",
+    taillight: "63-21-7-443-131"
+  },
+  "bmw_330i": {
+    bumper_front: "51-11-8-092-159",
+    bumper_rear: "51-12-8-092-161",
+    fender: "41-00-7-438-441",
+    hood: "41-00-7-443-487",
+    headlight: "63-11-8-496-159",
+    grille: "51-13-8-072-085"
+  },
+  "bmw_x5": {
+    bumper_front: "51-11-7-440-101",
+    bumper_rear: "51-12-7-440-103",
+    fender: "41-00-7-440-105",
+    hood: "41-00-7-440-107",
+    headlight: "63-11-7-440-109",
+    grille: "51-13-7-440-111"
+  },
+  "bmw_general": {
+    bumper_front: "51-11-8-092-159",
+    fender: "41-00-7-438-441",
+    hood: "41-00-7-443-487",
+    headlight: "63-11-8-496-159",
+    grille: "51-13-8-072-085"
+  },
   "honda_civic": {
     bumper_front: "04711-T20-A00ZZ",
     bumper_rear: "04715-T20-A00ZZ",
@@ -87,6 +166,22 @@ const OEM_CATALOG_REGISTRY: Record<string, Record<string, string>> = {
     fender: "ML3Z-16005-A",
     hood: "ML3Z-16612-A",
     headlight: "ML3Z-13008-B",
+    grille: "ML3Z-8200-A"
+  },
+  "chevrolet_silverado": {
+    bumper_front: "84918231",
+    bumper_rear: "84918233",
+    fender: "84918235",
+    hood: "84918237",
+    headlight: "84918239",
+    grille: "84918241"
+  },
+  "lada_vesta": {
+    bumper_front: "8450006666",
+    fender: "8450006670",
+    hood: "8450006668",
+    headlight: "8450006672",
+    grille: "8450006674"
   }
 };
 
@@ -94,12 +189,17 @@ function normalizePartName(name: string): string {
   const lower = name.toLowerCase();
   if (lower.includes("front") && lower.includes("bumper")) return "bumper_front";
   if (lower.includes("rear") && lower.includes("bumper")) return "bumper_rear";
-  if (lower.includes("fender")) return "fender";
+  if (lower.includes("bumper")) return "bumper_front";
+  if (lower.includes("fender") || lower.includes("quarter")) return "fender";
   if (lower.includes("door")) return "door";
-  if (lower.includes("hood")) return "hood";
-  if (lower.includes("grille")) return "grille";
-  if (lower.includes("headlight")) return "headlight";
-  if (lower.includes("taillight") || lower.includes("tail light")) return "taillight";
+  if (lower.includes("hood") || lower.includes("bonnet")) return "hood";
+  if (lower.includes("grille") || lower.includes("gril")) return "grille";
+  if (lower.includes("headlight") || lower.includes("head light") || lower.includes("headlamp")) return "headlight";
+  if (lower.includes("taillight") || lower.includes("tail light") || lower.includes("taillamp")) return "taillight";
+  if (lower.includes("wheel") || lower.includes("rim") || lower.includes("tire")) return "wheel";
+  if (lower.includes("mirror")) return "mirror";
+  if (lower.includes("glass") || lower.includes("windshield")) return "glass";
+  if (lower.includes("frame") || lower.includes("pillar") || lower.includes("radiator_support") || lower.includes("suspension")) return "frame";
   return "default";
 }
 
@@ -118,20 +218,32 @@ export function calculateCostEstimate(partName: string, severity: DamageSeverity
 export function lookupOemPart(
   make?: string | null,
   model?: string | null,
-  year?: number | null,
+  year?: number | string | null,
   partName?: string | null
 ): string | null {
-  if (!make || !model || !partName) return null;
+  if (!make || !partName) return null;
 
   const normalizedMake = make.trim().toLowerCase();
-  const normalizedModel = model.trim().toLowerCase();
+  const normalizedModel = (model || "").trim().toLowerCase();
   const normalizedKey = normalizePartName(partName);
 
-  // Find matching catalog entry
+  // Exact or partial make_model match
   for (const [key, parts] of Object.entries(OEM_CATALOG_REGISTRY)) {
     const [catMake, catModel] = key.split("_");
-    if (normalizedMake.includes(catMake) && normalizedModel.includes(catModel)) {
-      return parts[normalizedKey] || null;
+    if (normalizedMake.includes(catMake)) {
+      if (catModel === "general" || (normalizedModel && (normalizedModel.includes(catModel) || catModel.includes(normalizedModel)))) {
+        if (parts[normalizedKey]) {
+          return parts[normalizedKey];
+        }
+      }
+    }
+  }
+
+  // Fallback to any matching make in registry
+  for (const [key, parts] of Object.entries(OEM_CATALOG_REGISTRY)) {
+    const [catMake] = key.split("_");
+    if (normalizedMake.includes(catMake) && parts[normalizedKey]) {
+      return parts[normalizedKey];
     }
   }
 
