@@ -235,8 +235,8 @@ export default function Home() {
   const handleAnalyze = async () => {
     const cleanVin = vin.trim().toUpperCase();
 
-    if (cleanVin.length > 0 && cleanVin.length !== 17) {
-      setError('VIN must be 17 characters, or clear the VIN input to run photo-only analysis.');
+    if (cleanVin.length !== 17) {
+      setError('A valid 17-character Vehicle Identification Number (VIN) is required for official US collision damage appraisal.');
       return;
     }
 
@@ -424,10 +424,12 @@ export default function Home() {
                   <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-md shadow-blue-600/30">
                     1
                   </span>
-                  <label htmlFor="vin-input" className="font-bold text-slate-900 dark:text-white text-base">
+                  <label htmlFor="vin-input" className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
                     Vehicle Identification Number (VIN)
+                    <span className="text-xs font-extrabold bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      * Required
+                    </span>
                   </label>
-                  <span className="text-xs text-slate-400 font-normal">(Optional)</span>
                 </div>
                 <span className="text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 px-2.5 py-0.5 rounded-md">
                   NHTSA vPIC Verification
@@ -442,7 +444,7 @@ export default function Home() {
                     maxLength={17}
                     value={vin}
                     onChange={(e) => handleVinLookup(e.target.value)}
-                    placeholder="Enter 17-character VIN or select quick sample below"
+                    placeholder="Enter mandatory 17-character VIN (or select quick sample below)"
                     className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/80 rounded-xl font-mono text-base tracking-wider uppercase text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12 shadow-inner"
                   />
                   <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center">
@@ -476,6 +478,10 @@ export default function Home() {
                     </span>
                   </div>
                 )}
+
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  A 17-digit VIN is strictly required for regulatory US collision estimating, NHTSA vPIC verification, and legal repair order generation.
+                </p>
 
                 {/* Quick Sample VIN Selector */}
                 <div className="pt-1 flex flex-wrap items-center gap-2">
@@ -589,9 +595,9 @@ export default function Home() {
             <button
               type="button"
               onClick={handleAnalyze}
-              disabled={previewUrls.length === 0 || (vin.length > 0 && vin.length !== 17)}
+              disabled={previewUrls.length === 0 || vin.trim().length !== 17}
               className={`w-full py-4 rounded-xl font-bold text-lg shadow-xl transition-all flex items-center justify-center gap-2.5 ${
-                previewUrls.length > 0 && (vin.length === 0 || vin.length === 17)
+                previewUrls.length > 0 && vin.trim().length === 17
                   ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 ring-1 ring-white/20 cursor-pointer hover:shadow-blue-500/40'
                   : 'bg-slate-200 text-slate-400 dark:bg-slate-900 dark:text-slate-600 cursor-not-allowed border border-slate-300 dark:border-slate-800'
               }`}
@@ -601,6 +607,13 @@ export default function Home() {
               </svg>
               Run AI Collision Assessment & VIN Audit
             </button>
+            {(vin.trim().length !== 17 || previewUrls.length === 0) && (
+              <p className="text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
+                {vin.trim().length !== 17
+                  ? '⚠️ Enter a valid 17-character VIN above to unlock damage appraisal'
+                  : '📷 Upload at least one damage photo to begin analysis'}
+              </p>
+            )}
           </div>
         )}
 
@@ -719,6 +732,51 @@ export default function Home() {
             <>
               {/* 1. INTERACTIVE SCREEN VIEW (HIDDEN IN PRINT) */}
               <div className="print:hidden space-y-6 animate-in fade-in duration-500">
+                {/* EXECUTIVE REPORT NAVIGATION & CLOSE BAR */}
+                <div className="bg-white dark:bg-slate-900/90 border border-slate-200/90 dark:border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-sm backdrop-blur-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStep('upload');
+                        setFiles([]);
+                        setPreviewUrls([]);
+                        setResult(null);
+                      }}
+                      className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl text-sm flex items-center gap-2 transition-all cursor-pointer border border-slate-200 dark:border-slate-700 shadow-sm"
+                      title="Close Report & Return to Intake"
+                    >
+                      <svg className="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                      Close Report
+                    </button>
+                    <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">VIN:</span>
+                      <span className="font-mono text-sm sm:text-base font-black text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 px-3 py-1 rounded-lg border border-blue-200 dark:border-blue-800/60 tracking-wider">
+                        {result.vin}
+                      </span>
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800/50">
+                        ✓ Required & Verified
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => window.print()}
+                      className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md shadow-blue-600/30"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                      </svg>
+                      Print / Save PDF Contract
+                    </button>
+                  </div>
+                </div>
+
             {/* 1. CRITICAL DISCREPANCY AUDIT CARD (WHEN MISMATCH DETECTED) */}
             {result.discrepancy?.hasDiscrepancy && (
               <div className="bg-red-50 dark:bg-gradient-to-br dark:from-red-950/90 dark:via-rose-950/80 dark:to-slate-900 border-2 border-red-500 rounded-2xl p-6 shadow-sm dark:shadow-2xl space-y-4 print:border print:border-red-700 print:text-black print:bg-white print-avoid-break">
@@ -1087,8 +1145,23 @@ export default function Home() {
             <div className="pt-4 flex flex-col sm:flex-row gap-3 print:hidden">
               <button
                 type="button"
+                onClick={() => {
+                  setStep('upload');
+                  setFiles([]);
+                  setPreviewUrls([]);
+                  setResult(null);
+                }}
+                className="w-full sm:w-1/3 py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              >
+                <svg className="w-4 h-4 text-slate-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Close Report
+              </button>
+              <button
+                type="button"
                 onClick={() => window.print()}
-                className="w-full sm:w-1/2 py-3.5 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700/80 text-slate-800 dark:text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm dark:shadow-lg dark:shadow-black/20"
+                className="w-full sm:w-1/3 py-3.5 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700/80 text-slate-800 dark:text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm dark:shadow-lg dark:shadow-black/20"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -1103,7 +1176,7 @@ export default function Home() {
                   setPreviewUrls([]);
                   setResult(null);
                 }}
-                className="w-full sm:w-1/2 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-600/30"
+                className="w-full sm:w-1/3 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-600/30"
               >
                 Start Another Estimate
               </button>
@@ -1238,12 +1311,12 @@ export default function Home() {
                       <span className="text-slate-600 block text-[9.5px]">{result.trim ? `${result.trim} Trim` : result.bodyClass || 'Passenger Car'}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500 block text-[9px] uppercase font-bold">17-Digit Vehicle VIN</span>
+                      <span className="text-slate-500 block text-[9px] uppercase font-bold">17-Digit Vehicle VIN (Required)</span>
                       <span className="font-mono font-bold text-slate-950 text-[11px] tracking-wider">
-                        {result.vin || 'NO VIN PROVIDED (PHOTO ONLY)'}
+                        {result.vin}
                       </span>
                       <span className={`block text-[9.5px] font-semibold ${result.discrepancy?.hasDiscrepancy ? 'text-red-700' : 'text-emerald-700'}`}>
-                        {result.vin ? (result.discrepancy?.hasDiscrepancy ? '⚠️ Mismatched VIN' : '✓ NHTSA Registry Validated') : 'Visual Appraisal Only'}
+                        {result.discrepancy?.hasDiscrepancy ? '⚠️ Mismatched VIN' : '✓ NHTSA Registry Validated'}
                       </span>
                     </div>
                     <div>
