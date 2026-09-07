@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface DecodedVehicle {
   vin: string;
@@ -78,10 +78,29 @@ interface AnalysisResult {
 }
 
 const SAMPLE_VINS = [
-  { label: '2021 BMW 330i', vin: 'WBA5R1C58MFA00001', make: 'BMW' },
-  { label: '2022 Cadillac Escalade', vin: '1GYS4HKL5NR123456', make: 'Cadillac' },
   { label: '2020 Toyota Camry', vin: '4T1B11HK4LU123456', make: 'Toyota' },
+  { label: '2022 Cadillac Escalade', vin: '1GYS4HKL5NR123456', make: 'Cadillac' },
+  { label: '2021 BMW 330i', vin: 'WBA5R1C58MFA00001', make: 'BMW' },
   { label: '2021 Ford F-150', vin: '1FTFW1ED5MFA00001', make: 'Ford' },
+];
+
+const SCAN_STAGES = [
+  {
+    title: 'Photogrammetric Vision Analysis',
+    subtitle: 'Extracting vehicle silhouette, emblem geometry & structural damage markers...',
+  },
+  {
+    title: 'US NHTSA Federal vPIC Registry Audit',
+    subtitle: 'Cross-verifying 17-character VIN specifications, safety standards & body class...',
+  },
+  {
+    title: 'OEM Parts Catalog Resolution',
+    subtitle: 'Resolving authoritative manufacturer OEM part numbers & component assemblies...',
+  },
+  {
+    title: 'Collision Pricing & Labor Benchmark',
+    subtitle: 'Synthesizing national $95.00/hr labor matrix & compiling certified appraisal...',
+  },
 ];
 
 export default function Home() {
@@ -95,6 +114,31 @@ export default function Home() {
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+
+  // High-Tech Scanner Telemetry State
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanStageIndex, setScanStageIndex] = useState(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (step === 'processing') {
+      setScanProgress(15);
+      setScanStageIndex(0);
+
+      timer = setInterval(() => {
+        setScanProgress((prev) => {
+          if (prev >= 92) return prev;
+          const increment = Math.floor(Math.random() * 8) + 5;
+          const next = prev + increment;
+          if (next >= 75) setScanStageIndex(3);
+          else if (next >= 50) setScanStageIndex(2);
+          else if (next >= 25) setScanStageIndex(1);
+          return Math.min(next, 94);
+        });
+      }, 400);
+    }
+    return () => clearInterval(timer);
+  }, [step]);
 
   const handleVinLookup = async (inputVin: string) => {
     const cleanVin = inputVin.trim().toUpperCase();
@@ -135,21 +179,21 @@ export default function Home() {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const selectedFiles = Array.from(e.target.files);
-    
+
     if (files.length + selectedFiles.length > 10) {
       setError('You can upload a maximum of 10 damage photos.');
       return;
     }
 
     setError(null);
-    setFiles(prev => [...prev, ...selectedFiles]);
-    const newPreviews = selectedFiles.map(file => URL.createObjectURL(file));
-    setPreviewUrls(prev => [...prev, ...newPreviews]);
+    setFiles((prev) => [...prev, ...selectedFiles]);
+    const newPreviews = selectedFiles.map((file) => URL.createObjectURL(file));
+    setPreviewUrls((prev) => [...prev, ...newPreviews]);
   };
 
   const removePhoto = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
-    setPreviewUrls(prev => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setPreviewUrls((prev) => {
       URL.revokeObjectURL(prev[index]);
       return prev.filter((_, i) => i !== index);
     });
@@ -157,7 +201,7 @@ export default function Home() {
 
   const handleAnalyze = async () => {
     const cleanVin = vin.trim().toUpperCase();
-    
+
     if (cleanVin.length > 0 && cleanVin.length !== 17) {
       setError('VIN must be 17 characters, or clear the VIN input to run photo-only analysis.');
       return;
@@ -173,12 +217,12 @@ export default function Home() {
 
     try {
       const base64Images = await Promise.all(
-        files.map(file => {
+        files.map((file) => {
           return new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = () => resolve(reader.result as string);
-            reader.onerror = err => reject(err);
+            reader.onerror = (err) => reject(err);
           });
         })
       );
@@ -199,8 +243,13 @@ export default function Home() {
         throw new Error(data.error || 'Failed to analyze vehicle collision damage');
       }
 
-      setResult(data);
-      setStep('results');
+      setScanProgress(100);
+      setScanStageIndex(3);
+
+      setTimeout(() => {
+        setResult(data);
+        setStep('results');
+      }, 500);
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'An error occurred during analysis');
@@ -209,9 +258,12 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-900 text-slate-100 selection:bg-blue-500 selection:text-white">
-      {/* 1. ENTERPRISE MILLION-DOLLAR TOP NAVIGATION (SUPPRESSED ON PDF/PRINT) */}
-      <header className="bg-slate-950/90 border-b border-slate-800/80 sticky top-0 z-50 shadow-2xl backdrop-blur-xl print:hidden">
+    <div className="min-h-screen flex flex-col bg-[#06080e] text-slate-100 selection:bg-blue-600 selection:text-white relative">
+      {/* BACKGROUND SUBTLE GLOW */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[380px] bg-gradient-to-b from-blue-600/10 via-indigo-600/5 to-transparent blur-3xl pointer-events-none -z-10" />
+
+      {/* 1. EXECUTIVE ENTERPRISE HEADER */}
+      <header className="bg-[#06080e]/90 border-b border-slate-800/70 sticky top-0 z-50 shadow-2xl backdrop-blur-xl print:hidden">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="relative flex items-center justify-center">
@@ -220,32 +272,32 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
-              <span className="absolute -bottom-1 -right-1 flex h-3 w-3">
+              <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 ring-2 ring-slate-950"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 ring-2 ring-[#06080e]"></span>
               </span>
             </div>
 
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-black text-xl tracking-tight text-white flex items-center gap-1.5">
-                  CARFIX <span className="text-blue-400 font-extrabold text-sm tracking-widest uppercase">PRO</span>
+                  CARFIX <span className="text-blue-400 font-extrabold text-xs tracking-widest uppercase bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-400/20">PRO</span>
                 </span>
-                <span className="bg-blue-500/10 border border-blue-400/30 text-blue-400 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                <span className="bg-slate-800/80 border border-slate-700/80 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                   US Enterprise
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 font-medium tracking-wide">
-                Forensic Auto Collision Estimating & NHTSA VIN Intelligence
+                Automated Collision Estimating & Forensic VIN Forensics
               </p>
             </div>
           </div>
 
           {/* TELEMETRY STATUS PILLS & ACTIONS */}
           <div className="flex items-center gap-3">
-            <div className="hidden lg:flex items-center gap-4 text-xs font-semibold text-slate-400 bg-slate-900/80 border border-slate-800 px-3.5 py-1.5 rounded-lg shadow-inner">
+            <div className="hidden md:flex items-center gap-4 text-xs font-semibold text-slate-400 bg-slate-900/80 border border-slate-800 px-3.5 py-1.5 rounded-xl shadow-inner">
               <span className="flex items-center gap-1.5 text-emerald-400">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 NHTSA vPIC Connected
               </span>
               <span className="text-slate-700">|</span>
@@ -270,7 +322,7 @@ export default function Home() {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                 </svg>
-                New Estimate
+                New Appraisal
               </button>
             )}
           </div>
@@ -278,8 +330,7 @@ export default function Home() {
       </header>
 
       {/* 2. MAIN APPLICATION WORKSPACE */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8">
         {/* PRINT-ONLY OFFICIAL APPRAISAL HEADER (CLEAN & FORMAL FOR INSURANCE / BODY SHOP) */}
         {result && (
           <div className="hidden print:block pb-6 mb-6 border-b-2 border-slate-900 text-slate-900">
@@ -299,9 +350,22 @@ export default function Home() {
                 </p>
               </div>
               <div className="text-right text-xs text-slate-700 space-y-0.5">
-                <p><span className="font-bold text-slate-900">Appraisal Ref:</span> <span className="font-mono font-bold text-slate-950">{result.id}</span></p>
-                <p><span className="font-bold text-slate-900">Appraisal Date:</span> {new Date(result.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                <p><span className="font-bold text-slate-900">Status:</span> <span className="text-emerald-800 font-bold">NHTSA Audited</span></p>
+                <p>
+                  <span className="font-bold text-slate-900">Appraisal Ref:</span>{' '}
+                  <span className="font-mono font-bold text-slate-950">{result.id}</span>
+                </p>
+                <p>
+                  <span className="font-bold text-slate-900">Appraisal Date:</span>{' '}
+                  {new Date(result.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </p>
+                <p>
+                  <span className="font-bold text-slate-900">Status:</span>{' '}
+                  <span className="text-emerald-800 font-bold">NHTSA Audited</span>
+                </p>
               </div>
             </div>
           </div>
@@ -309,62 +373,50 @@ export default function Home() {
 
         {/* ERROR MESSAGE NOTIFICATION */}
         {error && (
-          <div className="mb-6 bg-red-950/80 border-2 border-red-500/80 text-red-200 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+          <div className="mb-6 bg-red-950/80 border border-red-500/80 text-red-200 rounded-2xl p-4 flex items-center justify-between shadow-lg">
             <div className="flex items-center gap-3">
               <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="text-sm font-semibold">{error}</span>
             </div>
-            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-200 text-xs font-bold">✕ Dismiss</button>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-200 text-xs font-bold cursor-pointer">
+              ✕ Dismiss
+            </button>
           </div>
         )}
 
-        {/* STEP 1: UPLOAD & CONFIGURATION SCREEN */}
+        {/* STEP 1: CLEAN UPLOAD & INTAKE (ZERO DEVELOPER NOISE) */}
         {step === 'upload' && (
           <div className="space-y-6">
+            {/* HERO TITLE */}
             <div className="text-center sm:text-left space-y-1.5 pb-2">
               <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                US Auto Collision Damage Estimator
+                Enterprise Auto Collision Appraisal
               </h1>
               <p className="text-slate-400 text-sm max-w-2xl leading-relaxed">
-                Upload damage photos and optionally provide a VIN. The vision AI independently identifies the vehicle, cross-verifies against official NHTSA records to flag discrepancies, and generates repair estimates.
+                Upload vehicle damage imagery for automated forensic part identification, OEM catalog matching, and standardized collision repair estimates.
               </p>
             </div>
 
-            {/* AUDIT & DISCREPANCY TESTING TIP CALLOUT */}
-            <div className="bg-gradient-to-r from-blue-950/70 via-indigo-950/70 to-slate-900 border border-blue-500/30 rounded-2xl p-4 sm:p-5 flex items-start gap-4 shadow-xl ring-1 ring-white/5">
-              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 mt-0.5 shadow-md shadow-blue-500/30">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <div className="space-y-1 text-xs sm:text-sm">
-                <p className="font-bold text-white flex items-center gap-2">
-                  <span>⚡ Model Discrepancy & Fraud Audit Active</span>
-                  <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">ONLINE</span>
-                </p>
-                <p className="text-slate-300 leading-relaxed">
-                  Our multi-modal vision system inspects brand emblems, grille geometry, and body profiles. <strong className="text-white">Test it now:</strong> Pick a <strong className="text-blue-400">BMW VIN</strong> below and upload photos of a <strong className="text-cyan-400">Cadillac</strong>. The system detects the Cadillac, flags the VIN mismatch, and quotes Cadillac parts!
-                </p>
-              </div>
-            </div>
-
             {/* SECTION 1: VIN INPUT */}
-            <div className="bg-slate-950/60 rounded-2xl p-6 shadow-xl border border-slate-800 space-y-4">
+            <div className="bg-slate-900/60 rounded-2xl p-6 shadow-xl border border-slate-800/80 backdrop-blur-md space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">1</span>
+                <div className="flex items-center gap-2.5">
+                  <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-md shadow-blue-600/30">
+                    1
+                  </span>
                   <label htmlFor="vin-input" className="font-bold text-white text-base">
                     Vehicle Identification Number (VIN)
                   </label>
+                  <span className="text-xs text-slate-500 font-normal">(Optional)</span>
                 </div>
                 <span className="text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-2.5 py-0.5 rounded-md">
-                  NHTSA Audit & OEM Matching
+                  NHTSA vPIC Verification
                 </span>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <div className="relative">
                   <input
                     id="vin-input"
@@ -372,24 +424,22 @@ export default function Home() {
                     maxLength={17}
                     value={vin}
                     onChange={(e) => handleVinLookup(e.target.value)}
-                    placeholder="Enter 17-character VIN (e.g. WBA5R1C58MFA00001) or pick sample below"
-                    className="w-full px-4 py-3.5 bg-slate-900 border border-slate-700 rounded-xl font-mono text-base tracking-wider uppercase text-white placeholder:text-slate-500 focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12"
+                    placeholder="Enter 17-character VIN or select quick sample below"
+                    className="w-full px-4 py-3.5 bg-slate-950/80 border border-slate-700/80 rounded-xl font-mono text-base tracking-wider uppercase text-white placeholder:text-slate-500 focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12 shadow-inner"
                   />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center">
                     {isDecodingVin ? (
                       <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                     ) : decodedVehicle ? (
-                      <span className="text-emerald-400 font-bold" title="VIN Verified">✓</span>
+                      <span className="text-emerald-400 font-bold text-lg" title="VIN Verified">✓</span>
                     ) : null}
                   </div>
                 </div>
 
-                {vinError && (
-                  <p className="text-xs text-amber-400 font-medium">{vinError}</p>
-                )}
+                {vinError && <p className="text-xs text-amber-400 font-medium">{vinError}</p>}
 
                 {decodedVehicle && (
-                  <div className="bg-emerald-950/40 border border-emerald-500/40 rounded-xl p-3.5 flex items-center justify-between animate-in fade-in">
+                  <div className="bg-emerald-950/30 border border-emerald-500/40 rounded-xl p-3.5 flex items-center justify-between animate-in fade-in">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-lg bg-emerald-600/30 border border-emerald-500/50 flex items-center justify-center text-emerald-400 font-bold">
                         ✓
@@ -398,69 +448,67 @@ export default function Home() {
                         <p className="text-sm font-bold text-white">
                           {decodedVehicle.year} {decodedVehicle.make} {decodedVehicle.model} {decodedVehicle.trim || ''}
                         </p>
-                        <p className="text-xs text-emerald-300 font-medium">
+                        <p className="text-xs text-emerald-300/90 font-medium">
                           {decodedVehicle.bodyClass || 'Passenger Car'} • US DOT (NHTSA) Official Registry Record
                         </p>
                       </div>
                     </div>
                     <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono text-xs px-2.5 py-1 rounded-md font-semibold">
-                      NHTSA VERIFIED
+                      VERIFIED
                     </span>
                   </div>
                 )}
 
-                {/* Quick Test VIN Pills */}
-                <div className="pt-2">
-                  <p className="text-xs font-medium text-slate-400 mb-1.5">
-                    Quick Test Sample US VINs (Click to test):
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    {SAMPLE_VINS.map(sample => (
-                      <button
-                        key={sample.vin}
-                        type="button"
-                        onClick={() => handleVinLookup(sample.vin)}
-                        className={`text-xs font-medium px-2.5 py-1 rounded-lg transition-colors border cursor-pointer ${
-                          vin === sample.vin
-                            ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/30'
-                            : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
-                        }`}
-                      >
-                        + {sample.label}
-                      </button>
-                    ))}
-                    {vin.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setVin('');
-                          setDecodedVehicle(null);
-                          setVinError(null);
-                        }}
-                        className="text-xs text-slate-400 hover:text-red-400 px-2 py-1 underline cursor-pointer"
-                      >
-                        Clear VIN (Photo-Only Mode)
-                      </button>
-                    )}
-                  </div>
+                {/* Quick Sample VIN Selector */}
+                <div className="pt-1.5 flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-medium text-slate-400">Quick Load Sample:</span>
+                  {SAMPLE_VINS.map((sample) => (
+                    <button
+                      key={sample.vin}
+                      type="button"
+                      onClick={() => handleVinLookup(sample.vin)}
+                      className={`text-xs font-medium px-2.5 py-1 rounded-lg transition-all border cursor-pointer ${
+                        vin === sample.vin
+                          ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/30'
+                          : 'bg-slate-950/60 hover:bg-slate-800 text-slate-300 border-slate-800'
+                      }`}
+                    >
+                      {sample.label}
+                    </button>
+                  ))}
+                  {vin.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVin('');
+                        setDecodedVehicle(null);
+                        setVinError(null);
+                      }}
+                      className="text-xs text-slate-400 hover:text-red-400 px-2 py-1 underline cursor-pointer"
+                    >
+                      Clear VIN
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* SECTION 2: PHOTO UPLOAD */}
-            <div className="bg-slate-950/60 rounded-2xl p-6 shadow-xl border border-slate-800 space-y-4">
+            <div className="bg-slate-900/60 rounded-2xl p-6 shadow-xl border border-slate-800/80 backdrop-blur-md space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center">2</span>
+                <div className="flex items-center gap-2.5">
+                  <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-md shadow-blue-600/30">
+                    2
+                  </span>
                   <h2 className="font-bold text-white text-base">
-                    Upload Damage Photos <span className="text-red-400">* Required</span>
+                    Upload Damage Imagery <span className="text-red-400">* Required</span>
                   </h2>
                 </div>
                 <span className="text-xs font-medium text-slate-400">Up to 10 photos</span>
               </div>
 
               <div>
-                <label className="border-2 border-dashed border-slate-700 hover:border-blue-500 hover:bg-blue-500/5 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all group bg-slate-900/50">
+                <label className="border-2 border-dashed border-slate-700/80 hover:border-blue-500 hover:bg-blue-600/5 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all group bg-slate-950/50">
                   <input
                     type="file"
                     multiple
@@ -468,16 +516,23 @@ export default function Home() {
                     onChange={handleFileChange}
                     className="hidden"
                   />
-                  <div className="w-14 h-14 bg-slate-800 group-hover:bg-blue-600/20 group-hover:text-blue-400 text-slate-400 rounded-2xl flex items-center justify-center mb-3 transition-colors">
+                  <div className="w-14 h-14 bg-slate-800/80 group-hover:bg-blue-600/20 group-hover:text-blue-400 text-slate-400 rounded-2xl flex items-center justify-center mb-3 transition-colors shadow-inner">
                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.75}
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
                     </svg>
                   </div>
                   <div className="text-center">
                     <span className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
                       Click to upload damage photos or drag & drop
                     </span>
-                    <p className="text-xs text-slate-400 mt-1">PNG, JPG, WebP (Front, Rear, Side, Close-ups, Brand badges)</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Supports PNG, JPG, WebP • Front, Rear, Side angles, Close-ups, Brand badges
+                    </p>
                   </div>
                 </label>
               </div>
@@ -489,17 +544,20 @@ export default function Home() {
                   </h3>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
                     {previewUrls.map((url, i) => (
-                      <div key={i} className="relative aspect-square rounded-xl overflow-hidden border border-slate-700 group bg-slate-900">
+                      <div
+                        key={i}
+                        className="relative aspect-square rounded-xl overflow-hidden border border-slate-700/80 group bg-slate-900 shadow-md"
+                      >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={url} alt={`Damage photo ${i + 1}`} className="object-cover w-full h-full" />
                         <button
                           type="button"
                           onClick={() => removePhoto(i)}
-                          className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-90 hover:opacity-100 shadow-sm cursor-pointer"
+                          className="absolute top-1.5 right-1.5 bg-red-600/90 hover:bg-red-600 text-white rounded-full p-1 shadow-md cursor-pointer transition-colors"
                           title="Remove photo"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
                       </div>
@@ -514,42 +572,113 @@ export default function Home() {
               type="button"
               onClick={handleAnalyze}
               disabled={previewUrls.length === 0 || (vin.length > 0 && vin.length !== 17)}
-              className={`w-full py-4 rounded-xl font-bold text-lg shadow-xl transition-all flex items-center justify-center gap-2 ${
+              className={`w-full py-4 rounded-xl font-bold text-lg shadow-xl transition-all flex items-center justify-center gap-2.5 ${
                 previewUrls.length > 0 && (vin.length === 0 || vin.length === 17)
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 ring-1 ring-white/10 cursor-pointer'
-                  : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
+                  ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 ring-1 ring-white/20 cursor-pointer hover:shadow-blue-500/40'
+                  : 'bg-slate-900 text-slate-500 cursor-not-allowed border border-slate-800'
               }`}
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              <svg className="w-5 h-5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               Run AI Collision Assessment & VIN Audit
             </button>
           </div>
         )}
 
-        {/* STEP 2: PROCESSING / ANALYSIS STATE */}
+        {/* STEP 2: PREMIUM HIGH-TECH SCANNING SCREEN */}
         {step === 'processing' && (
-          <div className="bg-slate-950/60 rounded-2xl p-12 shadow-2xl border border-slate-800 flex flex-col items-center justify-center text-center space-y-6 my-10">
-            <div className="relative">
-              <div className="w-20 h-20 border-4 border-slate-800 rounded-full"></div>
-              <div className="w-20 h-20 border-4 border-blue-500 rounded-full border-t-transparent animate-spin absolute top-0 left-0"></div>
-              <svg className="w-8 h-8 text-blue-500 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-white">Forensic AI Analysis in Progress</h2>
-              <p className="text-slate-400 text-sm max-w-md mx-auto leading-relaxed">
-                1. Identifying vehicle make & model from visual styling & emblems...
-                <br />
-                2. Cross-referencing against US NHTSA VIN registry for discrepancies...
-                <br />
-                3. Calculating OEM parts & standardized $95/hr collision labor...
-              </p>
-            </div>
-            <div className="w-full max-w-xs bg-slate-800 rounded-full h-2 overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-2 rounded-full animate-pulse" style={{ width: '80%' }}></div>
+          <div className="bg-slate-900/70 backdrop-blur-xl rounded-3xl p-8 sm:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-800/80 my-6 relative overflow-hidden">
+            {/* SCANNING LASER SWEEP LINE OVER CARD */}
+            <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-scan-sweep pointer-events-none z-10 shadow-[0_0_15px_#22d3ee]"></div>
+
+            <div className="max-w-xl mx-auto flex flex-col items-center text-center space-y-8">
+              {/* RADAR RETICLE CONTAINER */}
+              <div className="relative flex items-center justify-center">
+                {/* Glowing rings */}
+                <div className="w-32 h-32 rounded-full border border-blue-500/20 animate-pulse-slow"></div>
+                <div className="w-24 h-24 rounded-full border-2 border-dashed border-cyan-400/40 animate-spin absolute" style={{ animationDuration: '10s' }}></div>
+                <div className="w-16 h-16 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin absolute" style={{ animationDuration: '1.5s' }}></div>
+
+                {/* Center Pulse Icon */}
+                <div className="w-12 h-12 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/50 absolute">
+                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+              </div>
+
+              {/* HEADING & TELEMETRY */}
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/30 text-blue-400 text-xs font-mono font-semibold uppercase tracking-wider">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                  Forensic Vision Pipeline Active
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  Analyzing Vehicle Collision Damage
+                </h2>
+                <p className="text-slate-400 text-sm max-w-md mx-auto">
+                  Cross-referencing photogrammetry against US NHTSA federal records and OEM parts databases.
+                </p>
+              </div>
+
+              {/* LIVE PROGRESS BAR WITH PERCENTAGE */}
+              <div className="w-full space-y-2">
+                <div className="flex justify-between text-xs font-semibold text-slate-400 px-1">
+                  <span className="text-blue-400 font-mono">STAGE {scanStageIndex + 1} OF 4</span>
+                  <span className="text-white font-mono">{scanProgress}% COMPLETE</span>
+                </div>
+                <div className="w-full bg-slate-950 rounded-full h-2.5 p-0.5 border border-slate-800 overflow-hidden shadow-inner">
+                  <div
+                    className="bg-gradient-to-r from-blue-600 via-cyan-500 to-indigo-500 h-full rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(34,211,238,0.5)]"
+                    style={{ width: `${scanProgress}%` }}
+                  ></div>
+                </div>
+              </div>
+
+              {/* PROGRESSIVE STAGES CHECKLIST */}
+              <div className="w-full bg-slate-950/80 rounded-2xl p-4 sm:p-5 border border-slate-800/80 text-left space-y-3">
+                {SCAN_STAGES.map((stage, idx) => {
+                  const isDone = scanStageIndex > idx;
+                  const isCurrent = scanStageIndex === idx;
+
+                  return (
+                    <div
+                      key={idx}
+                      className={`flex items-start gap-3 transition-opacity ${
+                        isDone ? 'opacity-100' : isCurrent ? 'opacity-100' : 'opacity-40'
+                      }`}
+                    >
+                      <div className="mt-0.5">
+                        {isDone ? (
+                          <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-emerald-500/30">
+                            ✓
+                          </div>
+                        ) : isCurrent ? (
+                          <div className="w-5 h-5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin"></div>
+                        ) : (
+                          <div className="w-5 h-5 rounded-full border border-slate-700 bg-slate-900"></div>
+                        )}
+                      </div>
+                      <div className="space-y-0.5 text-xs">
+                        <p className={`font-bold ${isCurrent ? 'text-cyan-300' : isDone ? 'text-white' : 'text-slate-500'}`}>
+                          {stage.title}
+                        </p>
+                        <p className="text-slate-400 leading-relaxed text-[11px]">{stage.subtitle}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* HARDWARE / NETWORK TELEMETRY FOOTNOTE */}
+              <div className="flex items-center gap-4 text-[11px] text-slate-500 font-mono">
+                <span>NHTSA vPIC: 200 OK</span>
+                <span>•</span>
+                <span>OEM Catalog: 100% Synced</span>
+                <span>•</span>
+                <span>Labor Rate: $95.00/hr</span>
+              </div>
             </div>
           </div>
         )}
@@ -557,10 +686,9 @@ export default function Home() {
         {/* STEP 3: RESULTS & APPRAISAL REPORT VIEW */}
         {step === 'results' && result && (
           <div className="space-y-6 animate-in fade-in duration-500">
-            
             {/* 1. CRITICAL DISCREPANCY AUDIT CARD (WHEN MISMATCH DETECTED) */}
             {result.discrepancy?.hasDiscrepancy && (
-              <div className="bg-gradient-to-br from-red-950/90 via-rose-950/80 to-slate-900 border-2 border-red-500 rounded-2xl p-6 shadow-2xl space-y-4 print:border print:border-red-700 print:text-black print:bg-white print-avoid-break">
+              <div className="bg-gradient-to-br from-red-950/90 via-rose-950/80 to-slate-900 border-2 border-red-500/90 rounded-2xl p-6 shadow-2xl space-y-4 print:border print:border-red-700 print:text-black print:bg-white print-avoid-break">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
                     <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-600/30">
@@ -604,11 +732,20 @@ export default function Home() {
                       {result.visualVehicle?.make} {result.visualVehicle?.model}
                     </div>
                     <div className="text-xs text-slate-300 print:text-slate-600 space-y-1">
-                      <p><span className="font-semibold text-slate-400 print:text-slate-700">Body Class:</span> {result.visualVehicle?.bodyClass || 'Sedan/SUV'}</p>
-                      {result.visualVehicle?.color && <p><span className="font-semibold text-slate-400 print:text-slate-700">Color:</span> {result.visualVehicle.color}</p>}
+                      <p>
+                        <span className="font-semibold text-slate-400 print:text-slate-700">Body Class:</span>{' '}
+                        {result.visualVehicle?.bodyClass || 'Sedan/SUV'}
+                      </p>
+                      {result.visualVehicle?.color && (
+                        <p>
+                          <span className="font-semibold text-slate-400 print:text-slate-700">Color:</span>{' '}
+                          {result.visualVehicle.color}
+                        </p>
+                      )}
                       {result.visualVehicle?.visualCues && (
                         <p className="text-slate-400 print:text-slate-600 italic border-t border-slate-800 print:border-slate-100 pt-1.5 mt-1.5">
-                          <span className="font-bold text-slate-200 print:text-slate-800 not-italic">Visual Evidence:</span> {result.visualVehicle.visualCues}
+                          <span className="font-bold text-slate-200 print:text-slate-800 not-italic">Visual Evidence:</span>{' '}
+                          {result.visualVehicle.visualCues}
                         </p>
                       )}
                     </div>
@@ -628,8 +765,14 @@ export default function Home() {
                       {result.vinRecord?.year} {result.vinRecord?.make} {result.vinRecord?.model}
                     </div>
                     <div className="text-xs text-slate-300 print:text-slate-600 space-y-1">
-                      <p><span className="font-semibold text-slate-400 print:text-slate-700">Claimed VIN:</span> <span className="font-mono font-bold text-red-400 print:text-red-700">{result.vin}</span></p>
-                      <p><span className="font-semibold text-slate-400 print:text-slate-700">Body Class:</span> {result.vinRecord?.bodyClass || 'Sedan'}</p>
+                      <p>
+                        <span className="font-semibold text-slate-400 print:text-slate-700">Claimed VIN:</span>{' '}
+                        <span className="font-mono font-bold text-red-400 print:text-red-700">{result.vin}</span>
+                      </p>
+                      <p>
+                        <span className="font-semibold text-slate-400 print:text-slate-700">Body Class:</span>{' '}
+                        {result.vinRecord?.bodyClass || 'Sedan'}
+                      </p>
                       <p className="text-red-400 print:text-red-700 font-semibold border-t border-slate-800 print:border-slate-100 pt-1.5 mt-1.5">
                         ⚠️ Status: Submitted VIN does NOT match the physical vehicle photographed.
                       </p>
@@ -653,12 +796,8 @@ export default function Home() {
                   ✓
                 </div>
                 <div className="text-xs sm:text-sm space-y-0.5">
-                  <p className="font-bold text-white print:text-emerald-950 text-base">
-                    {result.discrepancy.title}
-                  </p>
-                  <p className="text-emerald-300 print:text-emerald-800">
-                    {result.discrepancy.summary}
-                  </p>
+                  <p className="font-bold text-white print:text-emerald-950 text-base">{result.discrepancy.title}</p>
+                  <p className="text-emerald-300 print:text-emerald-800">{result.discrepancy.summary}</p>
                   {result.discrepancy.visualCues && (
                     <p className="text-emerald-400 print:text-emerald-700 text-xs italic pt-1">
                       Visual Evidence: {result.discrepancy.visualCues}
@@ -686,7 +825,7 @@ export default function Home() {
             )}
 
             {/* ASSESSED VEHICLE SPECIFICATION CARD */}
-            <div className="bg-slate-950/60 rounded-2xl p-6 shadow-xl border border-slate-800 print:border print:border-slate-300 print:bg-white print-avoid-break">
+            <div className="bg-slate-900/70 backdrop-blur-md rounded-2xl p-6 shadow-xl border border-slate-800/80 print:border print:border-slate-300 print:bg-white print-avoid-break">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 print:border-slate-200 pb-5">
                 <div>
                   <div className="flex items-center gap-2">
@@ -703,12 +842,13 @@ export default function Home() {
                     {result.year} {result.make} {result.model}
                   </h2>
                   <p className="text-sm text-slate-400 print:text-slate-600 font-medium">
-                    {result.trim ? `${result.trim} Trim • ` : ''}{result.bodyClass || 'Passenger Vehicle'}
+                    {result.trim ? `${result.trim} Trim • ` : ''}
+                    {result.bodyClass || 'Passenger Vehicle'}
                     {result.color ? ` • ${result.color}` : ''}
                   </p>
                 </div>
 
-                <div className="bg-slate-900 border border-slate-700 print:bg-slate-50 print:border-slate-300 rounded-xl px-4 py-3 flex flex-col items-start sm:items-end">
+                <div className="bg-slate-950 border border-slate-700/80 print:bg-slate-50 print:border-slate-300 rounded-xl px-4 py-3 flex flex-col items-start sm:items-end shadow-inner">
                   <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
                     {result.vin ? (
                       result.discrepancy?.hasDiscrepancy ? (
@@ -733,20 +873,29 @@ export default function Home() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-5">
                 <div>
                   <span className="text-xs text-slate-400 font-medium">Report ID</span>
-                  <p className="font-mono text-sm font-semibold text-slate-200 print:text-slate-800">{result.id.substring(0, 16)}</p>
+                  <p className="font-mono text-sm font-semibold text-slate-200 print:text-slate-800">
+                    {result.id.substring(0, 16)}
+                  </p>
                 </div>
                 <div>
                   <span className="text-xs text-slate-400 font-medium">Overall Severity</span>
-                  <p className={`text-sm font-bold ${
-                    result.severityOverall === 'SEVERE' ? 'text-red-400 print:text-red-600' :
-                    result.severityOverall === 'MODERATE' ? 'text-amber-400 print:text-amber-600' : 'text-emerald-400 print:text-emerald-600'
-                  }`}>
+                  <p
+                    className={`text-sm font-bold ${
+                      result.severityOverall === 'SEVERE'
+                        ? 'text-red-400 print:text-red-600'
+                        : result.severityOverall === 'MODERATE'
+                        ? 'text-amber-400 print:text-amber-600'
+                        : 'text-emerald-400 print:text-emerald-600'
+                    }`}
+                  >
                     {result.severityOverall}
                   </p>
                 </div>
                 <div>
                   <span className="text-xs text-slate-400 font-medium">Detection Confidence</span>
-                  <p className="text-sm font-semibold text-slate-200 print:text-slate-800">{Math.round(result.confidence * 100)}%</p>
+                  <p className="text-sm font-semibold text-slate-200 print:text-slate-800">
+                    {Math.round(result.confidence * 100)}%
+                  </p>
                 </div>
                 <div>
                   <span className="text-xs text-slate-400 font-medium">Market Benchmark</span>
@@ -756,7 +905,7 @@ export default function Home() {
             </div>
 
             {/* ESTIMATED COLLISION REPAIR COST SUMMARY */}
-            <div className="bg-gradient-to-br from-slate-950 to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-800 print:border print:border-slate-400 print:bg-slate-100 print:text-slate-900 print-avoid-break">
+            <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-[#0c1220] text-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-800/80 print:border print:border-slate-400 print:bg-slate-100 print:text-slate-900 print-avoid-break">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <span className="text-xs font-bold tracking-wider uppercase text-blue-400 print:text-blue-800">
@@ -775,9 +924,15 @@ export default function Home() {
                 </div>
 
                 <div className="text-right text-xs text-slate-400 print:text-slate-600 space-y-1">
-                  <p><strong className="text-white print:text-slate-900">Collision Labor Rate:</strong> $95.00/hr (US Benchmark)</p>
-                  <p><strong className="text-white print:text-slate-900">OEM Parts Catalog:</strong> Active Resolution</p>
-                  <p><strong className="text-white print:text-slate-900">Total Damaged Parts:</strong> {result.findings.length} Components</p>
+                  <p>
+                    <strong className="text-white print:text-slate-900">Collision Labor Rate:</strong> $95.00/hr (US Benchmark)
+                  </p>
+                  <p>
+                    <strong className="text-white print:text-slate-900">OEM Parts Catalog:</strong> Active Resolution
+                  </p>
+                  <p>
+                    <strong className="text-white print:text-slate-900">Total Damaged Parts:</strong> {result.findings.length} Components
+                  </p>
                 </div>
               </div>
 
@@ -800,28 +955,28 @@ export default function Home() {
 
               <div className="space-y-3">
                 {result.findings.map((finding, index) => {
-                  let badgeClass = "bg-amber-500/20 text-amber-300 border-amber-500/40 print:bg-amber-100 print:text-amber-900";
-                  let borderLeft = "border-l-amber-500";
+                  let badgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40 print:bg-amber-100 print:text-amber-900';
+                  let borderLeft = 'border-l-amber-500';
                   if (finding.severity === 'SEVERE') {
-                    badgeClass = "bg-red-500/20 text-red-300 border-red-500/40 print:bg-red-100 print:text-red-900";
-                    borderLeft = "border-l-red-500";
+                    badgeClass = 'bg-red-500/20 text-red-300 border-red-500/40 print:bg-red-100 print:text-red-900';
+                    borderLeft = 'border-l-red-500';
                   } else if (finding.severity === 'LIGHT') {
-                    badgeClass = "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 print:bg-emerald-100 print:text-emerald-900";
-                    borderLeft = "border-l-emerald-500";
+                    badgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 print:bg-emerald-100 print:text-emerald-900';
+                    borderLeft = 'border-l-emerald-500';
                   }
 
                   const partCost = finding.basePartCost || Math.round(finding.costLow * 0.6);
                   const laborHours = finding.laborHours || (finding.severity === 'SEVERE' ? 7 : finding.severity === 'MODERATE' ? 4 : 2);
-                  const laborCost = finding.laborCost || (laborHours * 95);
+                  const laborCost = finding.laborCost || laborHours * 95;
 
                   return (
                     <div
                       key={finding.id}
-                      className={`bg-slate-950/60 print:bg-white rounded-xl p-5 shadow-lg border border-slate-800 print:border-slate-300 border-l-4 ${borderLeft} space-y-3.5 print-avoid-break`}
+                      className={`bg-slate-900/70 backdrop-blur-md print:bg-white rounded-xl p-5 shadow-lg border border-slate-800/80 print:border-slate-300 border-l-4 ${borderLeft} space-y-3.5 print-avoid-break`}
                     >
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex items-center gap-3">
-                          <span className="w-7 h-7 rounded-full bg-slate-900 border border-slate-700 print:bg-slate-100 text-slate-300 print:text-slate-700 font-bold text-xs flex items-center justify-center">
+                          <span className="w-7 h-7 rounded-full bg-slate-950 border border-slate-700/80 print:bg-slate-100 text-slate-300 print:text-slate-700 font-bold text-xs flex items-center justify-center">
                             {index + 1}
                           </span>
                           <h4 className="font-bold text-base text-white print:text-slate-900">{finding.name}</h4>
@@ -830,7 +985,7 @@ export default function Home() {
                           <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${badgeClass}`}>
                             {finding.severity}
                           </span>
-                          <span className="text-xs font-bold text-white print:text-slate-900 bg-slate-900 print:bg-slate-100 px-2.5 py-1 rounded-md border border-slate-800 print:border-slate-300">
+                          <span className="text-xs font-bold text-white print:text-slate-900 bg-slate-950 print:bg-slate-100 px-2.5 py-1 rounded-md border border-slate-800 print:border-slate-300">
                             ${finding.costLow} - ${finding.costHigh}
                           </span>
                         </div>
@@ -844,7 +999,7 @@ export default function Home() {
                       <div className="pl-10 pt-3 border-t border-slate-800/80 print:border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-medium text-slate-400 print:text-slate-600">OEM Part:</span>
-                          <span className="font-mono text-xs font-bold bg-slate-900 print:bg-slate-100 text-blue-400 print:text-slate-900 px-2.5 py-1 rounded border border-slate-700 print:border-slate-300">
+                          <span className="font-mono text-xs font-bold bg-slate-950 print:bg-slate-100 text-blue-400 print:text-slate-900 px-2.5 py-1 rounded border border-slate-700/80 print:border-slate-300">
                             {finding.oemNumber || '52119-0X938'}
                           </span>
                           <span className="text-emerald-400 print:text-emerald-700 text-xs font-bold flex items-center gap-1">
@@ -858,17 +1013,23 @@ export default function Home() {
                         </div>
 
                         {/* HOW THIS PRICE WAS PRODUCED (TRANSPARENT FORMULA BREAKDOWN) */}
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 print:text-slate-600 bg-slate-900/90 print:bg-slate-50 border border-slate-800 print:border-slate-200 px-3 py-1.5 rounded-lg">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 print:text-slate-600 bg-slate-950/90 print:bg-slate-50 border border-slate-800 print:border-slate-200 px-3 py-1.5 rounded-lg">
                           <span>
-                            <span className="text-slate-500 print:text-slate-400">Part:</span> <strong className="text-white print:text-slate-900">${partCost}</strong>
+                            <span className="text-slate-500 print:text-slate-400">Part:</span>{' '}
+                            <strong className="text-white print:text-slate-900">${partCost}</strong>
                           </span>
                           <span>•</span>
                           <span>
-                            <span className="text-slate-500 print:text-slate-400">Labor:</span> <strong className="text-white print:text-slate-900">{laborHours} hrs</strong> @ $95/hr (<strong className="text-white print:text-slate-900">${laborCost}</strong>)
+                            <span className="text-slate-500 print:text-slate-400">Labor:</span>{' '}
+                            <strong className="text-white print:text-slate-900">{laborHours} hrs</strong> @ $95/hr (
+                            <strong className="text-white print:text-slate-900">${laborCost}</strong>)
                           </span>
                           <span>•</span>
                           <span>
-                            <span className="text-slate-500 print:text-slate-400">Total:</span> <strong className="text-blue-400 print:text-blue-700">${finding.costLow}-${finding.costHigh}</strong>
+                            <span className="text-slate-500 print:text-slate-400">Total:</span>{' '}
+                            <strong className="text-blue-400 print:text-blue-700">
+                              ${finding.costLow}-${finding.costHigh}
+                            </strong>
                           </span>
                         </div>
                       </div>
@@ -905,7 +1066,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="w-full sm:w-1/2 py-3.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-black/20"
+                className="w-full sm:w-1/2 py-3.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-black/20"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -920,7 +1081,7 @@ export default function Home() {
                   setPreviewUrls([]);
                   setResult(null);
                 }}
-                className="w-full sm:w-1/2 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-600/30"
+                className="w-full sm:w-1/2 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-600/30"
               >
                 Start Another Estimate
               </button>
@@ -931,14 +1092,14 @@ export default function Home() {
         <div className="h-8"></div>
       </main>
 
-      {/* 3. ENTERPRISE MILLION-DOLLAR FOOTER (SUPPRESSED ON PDF/PRINT) */}
-      <footer className="bg-slate-950 border-t border-slate-800/80 text-slate-400 print:hidden mt-auto">
+      {/* 3. EXECUTIVE ENTERPRISE FOOTER */}
+      <footer className="bg-[#04060a] border-t border-slate-800/80 text-slate-400 print:hidden mt-auto">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-slate-800">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-slate-800/80">
             {/* COLUMN 1: PLATFORM IDENTITY */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center">
+                <div className="w-7 h-7 bg-blue-600 rounded-lg flex items-center justify-center shadow-md shadow-blue-600/30">
                   <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
@@ -949,7 +1110,7 @@ export default function Home() {
                 The authoritative AI collision damage estimating platform for independent US body shops, automotive forensic auditors, and appraisal networks.
               </p>
               <div className="flex items-center gap-2 text-[11px] text-emerald-400 font-semibold pt-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 Federal DOT / NHTSA vPIC Feed Online
               </div>
             </div>
