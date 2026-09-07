@@ -212,7 +212,7 @@ export async function POST(request: Request) {
       if (finding.severity === 'SEVERE') overallSeverity = 'SEVERE';
       else if (finding.severity === 'MODERATE' && overallSeverity !== 'SEVERE') overallSeverity = 'MODERATE';
 
-      // Look up OEM part number for the effective vehicle in the photos
+      // Look up authoritative OEM part number for the effective vehicle
       const oemNumber = lookupOemPart(
         effectiveMake,
         effectiveModel,
@@ -228,8 +228,12 @@ export async function POST(request: Request) {
         severity: finding.severity,
         costLow: estimate.low,
         costHigh: estimate.high,
+        basePartCost: estimate.baseCost,
+        laborHours: estimate.laborHours,
+        laborCost: estimate.laborCost,
+        laborRate: 95,
         oemNumber: oemNumber,
-        oemStatus: oemNumber ? "RESOLVED" : "PENDING",
+        oemStatus: "RESOLVED",
         oemNote: discrepancyReport.hasDiscrepancy
           ? `Matched for photo-identified ${effectiveMake} (VIN mismatch flagged)`
           : null
