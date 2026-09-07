@@ -1,3 +1,6 @@
+export const maxDuration = 60;
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { calculateCostEstimate, lookupOemPart } from '@/lib/pricingRules';

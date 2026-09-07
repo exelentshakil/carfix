@@ -232,6 +232,52 @@ export default function Home() {
     });
   };
 
+  // Client-side image optimizer: resizes photos to max 1280px & quality 0.80
+  // Prevents Vercel 4.5MB serverless payload limit (HTTP 413 Content Too Large)
+  const compressImageForAi = (file: File, maxDimension = 1280, quality = 0.8): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const rawDataUrl = e.target?.result as string;
+        if (!rawDataUrl) {
+          resolve('');
+          return;
+        }
+
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(rawDataUrl);
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', quality);
+          resolve(compressed);
+        };
+        img.onerror = () => resolve(rawDataUrl);
+        img.src = rawDataUrl;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleAnalyze = async () => {
     const cleanVin = vin.trim().toUpperCase();
 
@@ -249,16 +295,9 @@ export default function Home() {
     setError(null);
 
     try {
-      const base64Images = await Promise.all(
-        files.map((file) => {
-          return new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = (err) => reject(err);
-          });
-        })
-      );
+      const base64Images = (
+        await Promise.all(files.map((file) => compressImageForAi(file, 1280, 0.8)))
+      ).filter(Boolean);
 
       const response = await fetch('/api/analyze', {
         method: 'POST',
@@ -270,10 +309,20 @@ export default function Home() {
         }),
       });
 
-      const data = await response.json();
+      let data: any;
+      const contentType = response.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        const text = await response.text();
+        if (response.status === 413) {
+          throw new Error('Image payload exceeds server limit. Please upload fewer or smaller images.');
+        }
+        throw new Error(text || `Server returned error (${response.status})`);
+      }
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to analyze vehicle collision damage');
+        throw new Error(data?.error || 'Failed to analyze vehicle collision damage');
       }
 
       setScanProgress(100);
