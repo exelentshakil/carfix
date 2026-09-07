@@ -18,43 +18,38 @@ export async function POST(request: Request) {
     let cleanVin: string | null = null;
     let vinVehicle: VinVehicleInfo | null = null;
 
-    // VIN is strictly required for official US collision damage appraisal
-    if (!vin || typeof vin !== 'string' || vin.trim().length !== 17) {
-      return NextResponse.json(
-        { error: 'Vehicle Identification Number (VIN) is required and must be exactly 17 characters for official US collision damage appraisal and regulatory compliance.' },
-        { status: 400 }
-      );
-    }
+    // Optional VIN cross-audit: If 17-digit VIN is provided, cross-audit with US NHTSA. If omitted, proceed with pure computer vision identification.
+    if (vin && typeof vin === 'string' && vin.trim().length === 17) {
+      cleanVin = vin.trim().toUpperCase();
 
-    cleanVin = vin.trim().toUpperCase();
-
-    if (clientVehicle && clientVehicle.make) {
-      vinVehicle = {
-        vin: cleanVin,
-        make: clientVehicle.make,
-        model: clientVehicle.model,
-        year: clientVehicle.year,
-        trim: clientVehicle.trim,
-        bodyClass: clientVehicle.bodyClass,
-      };
-    } else {
-      const decoded = await decodeVinWithNhtsa(cleanVin);
-      if (decoded) {
+      if (clientVehicle && clientVehicle.make) {
         vinVehicle = {
           vin: cleanVin,
-          make: decoded.make,
-          model: decoded.model,
-          year: decoded.year,
-          trim: decoded.trim,
-          bodyClass: decoded.bodyClass,
+          make: clientVehicle.make,
+          model: clientVehicle.model,
+          year: clientVehicle.year,
+          trim: clientVehicle.trim,
+          bodyClass: clientVehicle.bodyClass,
         };
       } else {
-        vinVehicle = {
-          vin: cleanVin,
-          make: 'NHTSA Registered Vehicle',
-          model: 'Unknown Model',
-          year: new Date().getFullYear(),
-        };
+        const decoded = await decodeVinWithNhtsa(cleanVin);
+        if (decoded) {
+          vinVehicle = {
+            vin: cleanVin,
+            make: decoded.make,
+            model: decoded.model,
+            year: decoded.year,
+            trim: decoded.trim,
+            bodyClass: decoded.bodyClass,
+          };
+        } else {
+          vinVehicle = {
+            vin: cleanVin,
+            make: 'NHTSA Registered Vehicle',
+            model: 'Unknown Model',
+            year: new Date().getFullYear(),
+          };
+        }
       }
     }
 

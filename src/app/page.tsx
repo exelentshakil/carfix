@@ -235,8 +235,8 @@ export default function Home() {
   const handleAnalyze = async () => {
     const cleanVin = vin.trim().toUpperCase();
 
-    if (cleanVin.length !== 17) {
-      setError('A valid 17-character Vehicle Identification Number (VIN) is required for official US collision damage appraisal.');
+    if (cleanVin && cleanVin.length !== 17) {
+      setError('If providing a VIN, it must be exactly 17 characters (or leave blank for photo-based AI identification).');
       return;
     }
 
@@ -595,9 +595,9 @@ export default function Home() {
             <button
               type="button"
               onClick={handleAnalyze}
-              disabled={previewUrls.length === 0 || vin.trim().length !== 17}
+              disabled={previewUrls.length === 0}
               className={`w-full py-4 rounded-xl font-bold text-lg shadow-xl transition-all flex items-center justify-center gap-2.5 ${
-                previewUrls.length > 0 && vin.trim().length === 17
+                previewUrls.length > 0
                   ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 ring-1 ring-white/20 cursor-pointer hover:shadow-blue-500/40'
                   : 'bg-slate-200 text-slate-400 dark:bg-slate-900 dark:text-slate-600 cursor-not-allowed border border-slate-300 dark:border-slate-800'
               }`}
@@ -605,15 +605,17 @@ export default function Home() {
               <svg className="w-5 h-5 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              Run AI Collision Assessment & VIN Audit
+              {vin.trim().length === 17
+                ? 'Run AI Collision Assessment & NHTSA VIN Audit'
+                : 'Run AI Collision Assessment (Photo-Only)'}
             </button>
-            {(vin.trim().length !== 17 || previewUrls.length === 0) && (
-              <p className="text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
-                {vin.trim().length !== 17
-                  ? '⚠️ Enter a valid 17-character VIN above to unlock damage appraisal'
-                  : '📷 Upload at least one damage photo to begin analysis'}
-              </p>
-            )}
+            <p className="text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
+              {previewUrls.length === 0
+                ? '📷 Upload at least one damage photo to begin analysis'
+                : vin.trim().length === 17
+                ? '✓ 17-digit VIN verified for US NHTSA regulatory cross-audit'
+                : '💡 Tip: Enter a 17-character VIN above for NHTSA cross-verification, or proceed directly with AI photo assessment'}
+            </p>
           </div>
         )}
 
@@ -994,6 +996,40 @@ export default function Home() {
                 </div>
               </div>
             </div>
+
+            {/* SUBMITTED DAMAGE PHOTO EVIDENCE GALLERY (SCREEN & PRINT) */}
+            {previewUrls.length > 0 && (
+              <div className="bg-white dark:bg-slate-900/70 backdrop-blur-md rounded-2xl p-6 shadow-sm dark:shadow-xl border border-slate-200/90 dark:border-slate-800/80 print:border print:border-slate-300 print:bg-white print-avoid-break transition-colors duration-200">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 print:border-slate-200 pb-3 mb-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">📷</span>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 print:text-slate-900">
+                      Photogrammetric Damage Evidence ({previewUrls.length} Photo{previewUrls.length > 1 ? 's' : ''})
+                    </h3>
+                  </div>
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 print:text-slate-600">
+                    AI Visual Assessment Source
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  {previewUrls.map((url, i) => (
+                    <div
+                      key={i}
+                      className="group relative aspect-[4/3] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/80 bg-slate-100 dark:bg-slate-950 shadow-sm print:border-slate-300"
+                    >
+                      <img
+                        src={url}
+                        alt={`Vehicle damage evidence photo ${i + 1}`}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <span className="absolute bottom-1.5 left-1.5 bg-slate-900/80 backdrop-blur-sm text-[10px] font-mono font-bold text-white px-2 py-0.5 rounded shadow">
+                        PHOTO #{i + 1}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
                 {/* ESTIMATED COLLISION REPAIR COST SUMMARY (SCREEN VIEW) */}
             <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 dark:from-slate-950 dark:via-slate-900 dark:to-[#0c1220] text-white rounded-2xl p-6 sm:p-8 shadow-xl dark:shadow-2xl border border-slate-800 transition-colors duration-200">
