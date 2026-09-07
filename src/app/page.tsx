@@ -665,6 +665,76 @@ export default function Home() {
                 ? '✓ 17-digit VIN verified for US NHTSA regulatory cross-audit'
                 : '💡 Tip: Enter a 17-character VIN above for NHTSA cross-verification, or proceed directly with AI photo assessment'}
             </p>
+
+            {/* MILLION-DOLLAR ENTERPRISE SAAS PRODUCT DEMO SHOWCASE */}
+            <div className="pt-6 sm:pt-8">
+              <div className="relative rounded-3xl p-1 bg-gradient-to-b from-blue-500/25 via-slate-300/40 to-transparent dark:from-blue-500/30 dark:via-slate-800/40 dark:to-transparent shadow-2xl dark:shadow-[0_25px_60px_rgba(0,0,0,0.6)]">
+                <div className="bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl rounded-[22px] overflow-hidden border border-slate-200/90 dark:border-slate-800/90">
+                  {/* APP WINDOW HEADER (MACOS / HIGH-TECH ENTERPRISE STYLE) */}
+                  <div className="px-4 sm:px-5 py-3.5 bg-slate-100/90 dark:bg-slate-950/90 border-b border-slate-200/90 dark:border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-rose-500 shadow-sm inline-block"></span>
+                      <span className="w-3 h-3 rounded-full bg-amber-500 shadow-sm inline-block"></span>
+                      <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-sm inline-block"></span>
+                      <span className="ml-2 sm:ml-3 text-xs font-mono font-bold text-slate-600 dark:text-slate-400 flex items-center gap-2">
+                        <span className="text-blue-600 dark:text-blue-400 font-black">CARFIX PRO</span>
+                        <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
+                        <span className="hidden sm:inline">Enterprise Collision Appraisal Walkthrough</span>
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 dark:bg-blue-950/70 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
+                        LIVE DEMO
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* HIGH-RES VIDEO PLAYER WITH GLOW & CONTROLS */}
+                  <div className="relative aspect-video w-full bg-slate-950 overflow-hidden group">
+                    <video
+                      src="/videos/carfix-demo.webm"
+                      className="w-full h-full object-cover"
+                      controls
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                    />
+                  </div>
+
+                  {/* BOTTOM TELEMETRY / FEATURE STRIP */}
+                  <div className="px-5 sm:px-6 py-3.5 sm:py-4 bg-slate-50/90 dark:bg-slate-950/60 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 text-center">
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
+                        <span>⚡</span> Multimodal Vision
+                      </span>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Gemini 2.5 Flash</p>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
+                        <span>🛡️</span> NHTSA vPIC
+                      </span>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">US DOT Verification</p>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
+                        <span>🏷️</span> OEM Resolution
+                      </span>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">Authoritative Catalog</p>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white flex items-center justify-center gap-1.5">
+                        <span>📄</span> 1-Click PDF
+                      </span>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">US Repair Order</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
