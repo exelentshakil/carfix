@@ -104,6 +104,7 @@ const SCAN_STAGES = [
 ];
 
 export default function Home() {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [step, setStep] = useState<'upload' | 'processing' | 'results'>('upload');
   const [vin, setVin] = useState('');
   const [decodedVehicle, setDecodedVehicle] = useState<DecodedVehicle | null>(null);
@@ -118,6 +119,38 @@ export default function Home() {
   // High-Tech Scanner Telemetry State
   const [scanProgress, setScanProgress] = useState(0);
   const [scanStageIndex, setScanStageIndex] = useState(0);
+
+  // Initialize theme (Default: Light Mode)
+  useEffect(() => {
+    try {
+      const savedTheme = localStorage.getItem('carfix_theme') as 'light' | 'dark' | null;
+      if (savedTheme === 'dark') {
+        setTheme('dark');
+        document.documentElement.classList.add('dark');
+      } else {
+        setTheme('light');
+        document.documentElement.classList.remove('dark');
+      }
+    } catch {
+      setTheme('light');
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    setTheme(nextTheme);
+    try {
+      localStorage.setItem('carfix_theme', nextTheme);
+    } catch {
+      // ignore
+    }
+    if (nextTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -258,55 +291,80 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#06080e] text-slate-100 selection:bg-blue-600 selection:text-white relative">
-      {/* BACKGROUND SUBTLE GLOW */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[380px] bg-gradient-to-b from-blue-600/10 via-indigo-600/5 to-transparent blur-3xl pointer-events-none -z-10" />
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#06080e] text-slate-900 dark:text-slate-100 selection:bg-blue-600 selection:text-white transition-colors duration-200 relative">
+      {/* BACKGROUND AMBIENT GLOW */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-[380px] bg-gradient-to-b from-blue-500/5 dark:from-blue-600/10 via-indigo-500/5 dark:via-indigo-600/5 to-transparent blur-3xl pointer-events-none -z-10" />
 
       {/* 1. EXECUTIVE ENTERPRISE HEADER */}
-      <header className="bg-[#06080e]/90 border-b border-slate-800/70 sticky top-0 z-50 shadow-2xl backdrop-blur-xl print:hidden">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+      <header className="bg-white/90 dark:bg-[#06080e]/90 border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-50 shadow-sm dark:shadow-2xl backdrop-blur-xl print:hidden transition-colors duration-200">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="relative flex items-center justify-center">
-              <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/25 ring-1 ring-white/20">
+              <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20 dark:shadow-blue-500/25 ring-1 ring-black/5 dark:ring-white/20">
                 <svg className="w-6 h-6 text-white drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
               <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 ring-2 ring-[#06080e]"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 ring-2 ring-white dark:ring-[#06080e]"></span>
               </span>
             </div>
 
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-black text-xl tracking-tight text-white flex items-center gap-1.5">
-                  CARFIX <span className="text-blue-400 font-extrabold text-xs tracking-widest uppercase bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-400/20">PRO</span>
+                <span className="font-black text-xl tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
+                  CARFIX <span className="text-blue-600 dark:text-blue-400 font-extrabold text-xs tracking-widest uppercase bg-blue-50 dark:bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-200 dark:border-blue-400/20">PRO</span>
                 </span>
-                <span className="bg-slate-800/80 border border-slate-700/80 text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                <span className="bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 text-slate-600 dark:text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                   US Enterprise
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 font-medium tracking-wide">
-                Automated Collision Estimating & Forensic VIN Forensics
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium tracking-wide">
+                Automated Collision Estimating & Forensic VIN Intelligence
               </p>
             </div>
           </div>
 
-          {/* TELEMETRY STATUS PILLS & ACTIONS */}
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-4 text-xs font-semibold text-slate-400 bg-slate-900/80 border border-slate-800 px-3.5 py-1.5 rounded-xl shadow-inner">
-              <span className="flex items-center gap-1.5 text-emerald-400">
+          {/* RIGHT SIDE: TELEMETRY STATUS, THEME SWITCHER & ACTIONS */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Telemetry pill */}
+            <div className="hidden lg:flex items-center gap-3.5 text-xs font-semibold text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 px-3 py-1.5 rounded-xl shadow-inner">
+              <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 NHTSA vPIC Connected
               </span>
-              <span className="text-slate-700">|</span>
-              <span className="flex items-center gap-1 text-slate-300">
-                Labor Benchmark: <strong className="text-white">$95/hr</strong>
+              <span className="text-slate-300 dark:text-slate-700">|</span>
+              <span className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
+                Labor Benchmark: <strong className="text-slate-900 dark:text-white">$95/hr</strong>
               </span>
-              <span className="text-slate-700">|</span>
-              <span className="text-blue-400 font-mono text-[11px]">ISO 3779</span>
+              <span className="text-slate-300 dark:text-slate-700">|</span>
+              <span className="text-blue-600 dark:text-blue-400 font-mono text-[11px]">ISO 3779</span>
             </div>
+
+            {/* LIGHT / DARK MODE SWITCHER */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all text-xs font-semibold cursor-pointer bg-slate-50 hover:bg-slate-100 dark:bg-slate-900/80 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 shadow-sm"
+            >
+              {theme === 'light' ? (
+                <>
+                  <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                  <span className="font-medium">Light</span>
+                </>
+              ) : (
+                <>
+                  <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                  </svg>
+                  <span className="font-medium">Dark</span>
+                </>
+              )}
+            </button>
 
             {step === 'results' && (
               <button
@@ -317,7 +375,7 @@ export default function Home() {
                   setResult(null);
                   setError(null);
                 }}
-                className="text-xs sm:text-sm font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-4 py-2 rounded-xl transition-all shadow-md shadow-blue-600/30 ring-1 ring-white/10 flex items-center gap-1.5 cursor-pointer"
+                className="text-xs sm:text-sm font-bold bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-3.5 py-1.5 rounded-xl transition-all shadow-md shadow-blue-600/30 ring-1 ring-white/20 flex items-center gap-1.5 cursor-pointer"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
@@ -373,14 +431,14 @@ export default function Home() {
 
         {/* ERROR MESSAGE NOTIFICATION */}
         {error && (
-          <div className="mb-6 bg-red-950/80 border border-red-500/80 text-red-200 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+          <div className="mb-6 bg-red-50 dark:bg-red-950/80 border border-red-200 dark:border-red-500/80 text-red-800 dark:text-red-200 rounded-2xl p-4 flex items-center justify-between shadow-sm dark:shadow-lg">
             <div className="flex items-center gap-3">
-              <svg className="w-5 h-5 text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className="text-sm font-semibold">{error}</span>
             </div>
-            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-200 text-xs font-bold cursor-pointer">
+            <button onClick={() => setError(null)} className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 text-xs font-bold cursor-pointer">
               ✕ Dismiss
             </button>
           </div>
@@ -391,27 +449,27 @@ export default function Home() {
           <div className="space-y-6">
             {/* HERO TITLE */}
             <div className="text-center sm:text-left space-y-1.5 pb-2">
-              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                 Enterprise Auto Collision Appraisal
               </h1>
-              <p className="text-slate-400 text-sm max-w-2xl leading-relaxed">
+              <p className="text-slate-600 dark:text-slate-400 text-sm max-w-2xl leading-relaxed">
                 Upload vehicle damage imagery for automated forensic part identification, OEM catalog matching, and standardized collision repair estimates.
               </p>
             </div>
 
             {/* SECTION 1: VIN INPUT */}
-            <div className="bg-slate-900/60 rounded-2xl p-6 shadow-xl border border-slate-800/80 backdrop-blur-md space-y-4">
+            <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-6 shadow-sm dark:shadow-xl border border-slate-200/90 dark:border-slate-800/80 backdrop-blur-md space-y-4 transition-colors duration-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-md shadow-blue-600/30">
                     1
                   </span>
-                  <label htmlFor="vin-input" className="font-bold text-white text-base">
+                  <label htmlFor="vin-input" className="font-bold text-slate-900 dark:text-white text-base">
                     Vehicle Identification Number (VIN)
                   </label>
-                  <span className="text-xs text-slate-500 font-normal">(Optional)</span>
+                  <span className="text-xs text-slate-400 font-normal">(Optional)</span>
                 </div>
-                <span className="text-xs font-semibold bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-2.5 py-0.5 rounded-md">
+                <span className="text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 px-2.5 py-0.5 rounded-md">
                   NHTSA vPIC Verification
                 </span>
               </div>
@@ -425,43 +483,43 @@ export default function Home() {
                     value={vin}
                     onChange={(e) => handleVinLookup(e.target.value)}
                     placeholder="Enter 17-character VIN or select quick sample below"
-                    className="w-full px-4 py-3.5 bg-slate-950/80 border border-slate-700/80 rounded-xl font-mono text-base tracking-wider uppercase text-white placeholder:text-slate-500 focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12 shadow-inner"
+                    className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/80 rounded-xl font-mono text-base tracking-wider uppercase text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12 shadow-inner"
                   />
                   <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center">
                     {isDecodingVin ? (
                       <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
                     ) : decodedVehicle ? (
-                      <span className="text-emerald-400 font-bold text-lg" title="VIN Verified">✓</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold text-lg" title="VIN Verified">✓</span>
                     ) : null}
                   </div>
                 </div>
 
-                {vinError && <p className="text-xs text-amber-400 font-medium">{vinError}</p>}
+                {vinError && <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">{vinError}</p>}
 
                 {decodedVehicle && (
-                  <div className="bg-emerald-950/30 border border-emerald-500/40 rounded-xl p-3.5 flex items-center justify-between animate-in fade-in">
+                  <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/40 rounded-xl p-3.5 flex items-center justify-between animate-in fade-in">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-600/30 border border-emerald-500/50 flex items-center justify-center text-emerald-400 font-bold">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-600/30 border border-emerald-200 dark:border-emerald-500/50 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-bold">
                         ✓
                       </div>
                       <div>
-                        <p className="text-sm font-bold text-white">
+                        <p className="text-sm font-bold text-slate-900 dark:text-white">
                           {decodedVehicle.year} {decodedVehicle.make} {decodedVehicle.model} {decodedVehicle.trim || ''}
                         </p>
-                        <p className="text-xs text-emerald-300/90 font-medium">
+                        <p className="text-xs text-emerald-800 dark:text-emerald-300/90 font-medium">
                           {decodedVehicle.bodyClass || 'Passenger Car'} • US DOT (NHTSA) Official Registry Record
                         </p>
                       </div>
                     </div>
-                    <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-mono text-xs px-2.5 py-1 rounded-md font-semibold">
+                    <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/40 font-mono text-xs px-2.5 py-1 rounded-md font-semibold">
                       VERIFIED
                     </span>
                   </div>
                 )}
 
                 {/* Quick Sample VIN Selector */}
-                <div className="pt-1.5 flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-medium text-slate-400">Quick Load Sample:</span>
+                <div className="pt-1 flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Quick Load Sample:</span>
                   {SAMPLE_VINS.map((sample) => (
                     <button
                       key={sample.vin}
@@ -469,8 +527,8 @@ export default function Home() {
                       onClick={() => handleVinLookup(sample.vin)}
                       className={`text-xs font-medium px-2.5 py-1 rounded-lg transition-all border cursor-pointer ${
                         vin === sample.vin
-                          ? 'bg-blue-600 text-white border-blue-500 shadow-md shadow-blue-500/30'
-                          : 'bg-slate-950/60 hover:bg-slate-800 text-slate-300 border-slate-800'
+                          ? 'bg-blue-600 text-white border-blue-500 shadow-sm shadow-blue-500/30'
+                          : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-950/60 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
                       }`}
                     >
                       {sample.label}
@@ -484,7 +542,7 @@ export default function Home() {
                         setDecodedVehicle(null);
                         setVinError(null);
                       }}
-                      className="text-xs text-slate-400 hover:text-red-400 px-2 py-1 underline cursor-pointer"
+                      className="text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-2 py-1 underline cursor-pointer"
                     >
                       Clear VIN
                     </button>
@@ -494,21 +552,21 @@ export default function Home() {
             </div>
 
             {/* SECTION 2: PHOTO UPLOAD */}
-            <div className="bg-slate-900/60 rounded-2xl p-6 shadow-xl border border-slate-800/80 backdrop-blur-md space-y-4">
+            <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-6 shadow-sm dark:shadow-xl border border-slate-200/90 dark:border-slate-800/80 backdrop-blur-md space-y-4 transition-colors duration-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-md shadow-blue-600/30">
                     2
                   </span>
-                  <h2 className="font-bold text-white text-base">
-                    Upload Damage Imagery <span className="text-red-400">* Required</span>
+                  <h2 className="font-bold text-slate-900 dark:text-white text-base">
+                    Upload Damage Imagery <span className="text-red-600 dark:text-red-400">* Required</span>
                   </h2>
                 </div>
-                <span className="text-xs font-medium text-slate-400">Up to 10 photos</span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Up to 10 photos</span>
               </div>
 
               <div>
-                <label className="border-2 border-dashed border-slate-700/80 hover:border-blue-500 hover:bg-blue-600/5 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all group bg-slate-950/50">
+                <label className="border-2 border-dashed border-slate-300 dark:border-slate-700/80 hover:border-blue-500 dark:hover:border-blue-500 bg-slate-50/70 hover:bg-blue-50/40 dark:bg-slate-950/50 dark:hover:bg-blue-600/5 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all group">
                   <input
                     type="file"
                     multiple
@@ -516,7 +574,7 @@ export default function Home() {
                     onChange={handleFileChange}
                     className="hidden"
                   />
-                  <div className="w-14 h-14 bg-slate-800/80 group-hover:bg-blue-600/20 group-hover:text-blue-400 text-slate-400 rounded-2xl flex items-center justify-center mb-3 transition-colors shadow-inner">
+                  <div className="w-14 h-14 bg-slate-100 group-hover:bg-blue-100 dark:bg-slate-800/80 dark:group-hover:bg-blue-600/20 text-slate-500 group-hover:text-blue-600 dark:text-slate-400 dark:group-hover:text-blue-400 rounded-2xl flex items-center justify-center mb-3 transition-colors shadow-inner">
                     <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
@@ -527,10 +585,10 @@ export default function Home() {
                     </svg>
                   </div>
                   <div className="text-center">
-                    <span className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
+                    <span className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       Click to upload damage photos or drag & drop
                     </span>
-                    <p className="text-xs text-slate-400 mt-1">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                       Supports PNG, JPG, WebP • Front, Rear, Side angles, Close-ups, Brand badges
                     </p>
                   </div>
@@ -539,21 +597,21 @@ export default function Home() {
 
               {previewUrls.length > 0 && (
                 <div className="space-y-3 pt-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     Uploaded Damage Photos ({previewUrls.length})
                   </h3>
                   <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
                     {previewUrls.map((url, i) => (
                       <div
                         key={i}
-                        className="relative aspect-square rounded-xl overflow-hidden border border-slate-700/80 group bg-slate-900 shadow-md"
+                        className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/80 group bg-slate-100 dark:bg-slate-900 shadow-sm"
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={url} alt={`Damage photo ${i + 1}`} className="object-cover w-full h-full" />
                         <button
                           type="button"
                           onClick={() => removePhoto(i)}
-                          className="absolute top-1.5 right-1.5 bg-red-600/90 hover:bg-red-600 text-white rounded-full p-1 shadow-md cursor-pointer transition-colors"
+                          className="absolute top-1.5 right-1.5 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow-md cursor-pointer transition-colors"
                           title="Remove photo"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -575,10 +633,10 @@ export default function Home() {
               className={`w-full py-4 rounded-xl font-bold text-lg shadow-xl transition-all flex items-center justify-center gap-2.5 ${
                 previewUrls.length > 0 && (vin.length === 0 || vin.length === 17)
                   ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 ring-1 ring-white/20 cursor-pointer hover:shadow-blue-500/40'
-                  : 'bg-slate-900 text-slate-500 cursor-not-allowed border border-slate-800'
+                  : 'bg-slate-200 text-slate-400 dark:bg-slate-900 dark:text-slate-600 cursor-not-allowed border border-slate-300 dark:border-slate-800'
               }`}
             >
-              <svg className="w-5 h-5 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               Run AI Collision Assessment & VIN Audit
@@ -588,20 +646,20 @@ export default function Home() {
 
         {/* STEP 2: PREMIUM HIGH-TECH SCANNING SCREEN */}
         {step === 'processing' && (
-          <div className="bg-slate-900/70 backdrop-blur-xl rounded-3xl p-8 sm:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-800/80 my-6 relative overflow-hidden">
+          <div className="bg-white/95 dark:bg-slate-900/70 backdrop-blur-xl rounded-3xl p-8 sm:p-12 shadow-xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-200 dark:border-slate-800/80 my-6 relative overflow-hidden transition-colors duration-200">
             {/* SCANNING LASER SWEEP LINE OVER CARD */}
-            <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-scan-sweep pointer-events-none z-10 shadow-[0_0_15px_#22d3ee]"></div>
+            <div className="absolute inset-x-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-500 to-transparent animate-scan-sweep pointer-events-none z-10 shadow-[0_0_15px_#06b6d4]"></div>
 
             <div className="max-w-xl mx-auto flex flex-col items-center text-center space-y-8">
               {/* RADAR RETICLE CONTAINER */}
               <div className="relative flex items-center justify-center">
                 {/* Glowing rings */}
                 <div className="w-32 h-32 rounded-full border border-blue-500/20 animate-pulse-slow"></div>
-                <div className="w-24 h-24 rounded-full border-2 border-dashed border-cyan-400/40 animate-spin absolute" style={{ animationDuration: '10s' }}></div>
+                <div className="w-24 h-24 rounded-full border-2 border-dashed border-cyan-500/40 animate-spin absolute" style={{ animationDuration: '10s' }}></div>
                 <div className="w-16 h-16 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin absolute" style={{ animationDuration: '1.5s' }}></div>
 
                 {/* Center Pulse Icon */}
-                <div className="w-12 h-12 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/50 absolute">
+                <div className="w-12 h-12 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/40 absolute">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
@@ -610,34 +668,34 @@ export default function Home() {
 
               {/* HEADING & TELEMETRY */}
               <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/30 text-blue-400 text-xs font-mono font-semibold uppercase tracking-wider">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-400/30 text-blue-700 dark:text-blue-400 text-xs font-mono font-semibold uppercase tracking-wider">
+                  <span className="w-2 h-2 rounded-full bg-cyan-500 animate-ping"></span>
                   Forensic Vision Pipeline Active
                 </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
                   Analyzing Vehicle Collision Damage
                 </h2>
-                <p className="text-slate-400 text-sm max-w-md mx-auto">
+                <p className="text-slate-600 dark:text-slate-400 text-sm max-md mx-auto">
                   Cross-referencing photogrammetry against US NHTSA federal records and OEM parts databases.
                 </p>
               </div>
 
               {/* LIVE PROGRESS BAR WITH PERCENTAGE */}
               <div className="w-full space-y-2">
-                <div className="flex justify-between text-xs font-semibold text-slate-400 px-1">
-                  <span className="text-blue-400 font-mono">STAGE {scanStageIndex + 1} OF 4</span>
-                  <span className="text-white font-mono">{scanProgress}% COMPLETE</span>
+                <div className="flex justify-between text-xs font-semibold text-slate-600 dark:text-slate-400 px-1">
+                  <span className="text-blue-600 dark:text-blue-400 font-mono">STAGE {scanStageIndex + 1} OF 4</span>
+                  <span className="text-slate-900 dark:text-white font-mono">{scanProgress}% COMPLETE</span>
                 </div>
-                <div className="w-full bg-slate-950 rounded-full h-2.5 p-0.5 border border-slate-800 overflow-hidden shadow-inner">
+                <div className="w-full bg-slate-100 dark:bg-slate-950 rounded-full h-2.5 p-0.5 border border-slate-200 dark:border-slate-800 overflow-hidden shadow-inner">
                   <div
-                    className="bg-gradient-to-r from-blue-600 via-cyan-500 to-indigo-500 h-full rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(34,211,238,0.5)]"
+                    className="bg-gradient-to-r from-blue-600 via-cyan-500 to-indigo-500 h-full rounded-full transition-all duration-300 shadow-[0_0_12px_rgba(6,182,212,0.4)]"
                     style={{ width: `${scanProgress}%` }}
                   ></div>
                 </div>
               </div>
 
               {/* PROGRESSIVE STAGES CHECKLIST */}
-              <div className="w-full bg-slate-950/80 rounded-2xl p-4 sm:p-5 border border-slate-800/80 text-left space-y-3">
+              <div className="w-full bg-slate-50 dark:bg-slate-950/80 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800/80 text-left space-y-3">
                 {SCAN_STAGES.map((stage, idx) => {
                   const isDone = scanStageIndex > idx;
                   const isCurrent = scanStageIndex === idx;
@@ -651,20 +709,28 @@ export default function Home() {
                     >
                       <div className="mt-0.5">
                         {isDone ? (
-                          <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow-md shadow-emerald-500/30">
+                          <div className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold shadow-sm shadow-emerald-500/30">
                             ✓
                           </div>
                         ) : isCurrent ? (
-                          <div className="w-5 h-5 rounded-full border-2 border-cyan-400 border-t-transparent animate-spin"></div>
+                          <div className="w-5 h-5 rounded-full border-2 border-cyan-500 border-t-transparent animate-spin"></div>
                         ) : (
-                          <div className="w-5 h-5 rounded-full border border-slate-700 bg-slate-900"></div>
+                          <div className="w-5 h-5 rounded-full border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-900"></div>
                         )}
                       </div>
                       <div className="space-y-0.5 text-xs">
-                        <p className={`font-bold ${isCurrent ? 'text-cyan-300' : isDone ? 'text-white' : 'text-slate-500'}`}>
+                        <p
+                          className={`font-bold ${
+                            isCurrent
+                              ? 'text-cyan-700 dark:text-cyan-300'
+                              : isDone
+                              ? 'text-slate-900 dark:text-white'
+                              : 'text-slate-400 dark:text-slate-500'
+                          }`}
+                        >
                           {stage.title}
                         </p>
-                        <p className="text-slate-400 leading-relaxed text-[11px]">{stage.subtitle}</p>
+                        <p className="text-slate-500 dark:text-slate-400 leading-relaxed text-[11px]">{stage.subtitle}</p>
                       </div>
                     </div>
                   );
@@ -672,7 +738,7 @@ export default function Home() {
               </div>
 
               {/* HARDWARE / NETWORK TELEMETRY FOOTNOTE */}
-              <div className="flex items-center gap-4 text-[11px] text-slate-500 font-mono">
+              <div className="flex items-center gap-4 text-[11px] text-slate-400 dark:text-slate-500 font-mono">
                 <span>NHTSA vPIC: 200 OK</span>
                 <span>•</span>
                 <span>OEM Catalog: 100% Synced</span>
@@ -688,10 +754,10 @@ export default function Home() {
           <div className="space-y-6 animate-in fade-in duration-500">
             {/* 1. CRITICAL DISCREPANCY AUDIT CARD (WHEN MISMATCH DETECTED) */}
             {result.discrepancy?.hasDiscrepancy && (
-              <div className="bg-gradient-to-br from-red-950/90 via-rose-950/80 to-slate-900 border-2 border-red-500/90 rounded-2xl p-6 shadow-2xl space-y-4 print:border print:border-red-700 print:text-black print:bg-white print-avoid-break">
+              <div className="bg-red-50 dark:bg-gradient-to-br dark:from-red-950/90 dark:via-rose-950/80 dark:to-slate-900 border-2 border-red-500 rounded-2xl p-6 shadow-sm dark:shadow-2xl space-y-4 print:border print:border-red-700 print:text-black print:bg-white print-avoid-break">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-600/30">
+                    <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center flex-shrink-0 shadow-md shadow-red-600/30">
                       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                       </svg>
@@ -701,50 +767,50 @@ export default function Home() {
                         <span className="bg-red-600 text-white font-extrabold text-xs px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                           Critical Audit Alert
                         </span>
-                        <span className="text-red-400 font-bold text-xs uppercase tracking-wider">
+                        <span className="text-red-700 dark:text-red-400 font-bold text-xs uppercase tracking-wider">
                           Vehicle Model Mismatch Flagged
                         </span>
                       </div>
-                      <h2 className="text-xl sm:text-2xl font-black text-white print:text-red-950 mt-1">
+                      <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white print:text-red-950 mt-1">
                         {result.discrepancy.title}
                       </h2>
                     </div>
                   </div>
                 </div>
 
-                <p className="text-sm text-red-200 font-medium leading-relaxed bg-black/40 print:bg-red-50 print:text-red-900 p-3.5 rounded-xl border border-red-500/30">
+                <p className="text-sm text-red-950 dark:text-red-200 font-medium leading-relaxed bg-red-100/70 dark:bg-black/40 print:bg-red-50 print:text-red-900 p-3.5 rounded-xl border border-red-200 dark:border-red-500/30">
                   {result.discrepancy.explanation}
                 </p>
 
                 {/* SIDE-BY-SIDE FORENSIC COMPARISON */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
                   {/* PHOTO ANALYSIS */}
-                  <div className="bg-slate-900/90 print:bg-white rounded-xl p-4 border border-amber-500/40 print:border-amber-300 shadow-md space-y-2">
+                  <div className="bg-white dark:bg-slate-900/90 print:bg-white rounded-xl p-4 border border-amber-300 dark:border-amber-500/40 shadow-sm space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-extrabold uppercase tracking-wider text-amber-400 print:text-amber-800 flex items-center gap-1">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-amber-700 dark:text-amber-400 print:text-amber-800 flex items-center gap-1">
                         📷 Uploaded Photos (Actual Vehicle)
                       </span>
-                      <span className="bg-amber-500/20 text-amber-300 print:bg-amber-100 print:text-amber-900 font-bold text-xs px-2 py-0.5 rounded-md border border-amber-500/30">
+                      <span className="bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 print:bg-amber-100 print:text-amber-900 font-bold text-xs px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-500/30">
                         {Math.round((result.visualVehicle?.confidence || 0.95) * 100)}% Match
                       </span>
                     </div>
-                    <div className="text-lg font-black text-white print:text-slate-900">
+                    <div className="text-lg font-black text-slate-900 dark:text-white print:text-slate-900">
                       {result.visualVehicle?.make} {result.visualVehicle?.model}
                     </div>
-                    <div className="text-xs text-slate-300 print:text-slate-600 space-y-1">
+                    <div className="text-xs text-slate-600 dark:text-slate-300 print:text-slate-600 space-y-1">
                       <p>
-                        <span className="font-semibold text-slate-400 print:text-slate-700">Body Class:</span>{' '}
+                        <span className="font-semibold text-slate-500 dark:text-slate-400 print:text-slate-700">Body Class:</span>{' '}
                         {result.visualVehicle?.bodyClass || 'Sedan/SUV'}
                       </p>
                       {result.visualVehicle?.color && (
                         <p>
-                          <span className="font-semibold text-slate-400 print:text-slate-700">Color:</span>{' '}
+                          <span className="font-semibold text-slate-500 dark:text-slate-400 print:text-slate-700">Color:</span>{' '}
                           {result.visualVehicle.color}
                         </p>
                       )}
                       {result.visualVehicle?.visualCues && (
-                        <p className="text-slate-400 print:text-slate-600 italic border-t border-slate-800 print:border-slate-100 pt-1.5 mt-1.5">
-                          <span className="font-bold text-slate-200 print:text-slate-800 not-italic">Visual Evidence:</span>{' '}
+                        <p className="text-slate-500 dark:text-slate-400 print:text-slate-600 italic border-t border-slate-100 dark:border-slate-800 print:border-slate-100 pt-1.5 mt-1.5">
+                          <span className="font-bold text-slate-700 dark:text-slate-200 print:text-slate-800 not-italic">Visual Evidence:</span>{' '}
                           {result.visualVehicle.visualCues}
                         </p>
                       )}
@@ -752,35 +818,35 @@ export default function Home() {
                   </div>
 
                   {/* VIN REGISTRY */}
-                  <div className="bg-slate-900/90 print:bg-white rounded-xl p-4 border border-red-500/40 print:border-red-300 shadow-md space-y-2">
+                  <div className="bg-white dark:bg-slate-900/90 print:bg-white rounded-xl p-4 border border-red-300 dark:border-red-500/40 shadow-sm space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-extrabold uppercase tracking-wider text-red-400 print:text-red-800 flex items-center gap-1">
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-red-700 dark:text-red-400 print:text-red-800 flex items-center gap-1">
                         🏛️ US NHTSA Record (Claimed VIN)
                       </span>
-                      <span className="bg-red-500/20 text-red-300 print:bg-red-100 print:text-red-800 font-bold text-xs px-2 py-0.5 rounded-md border border-red-500/30">
+                      <span className="bg-red-100 text-red-800 dark:bg-red-500/20 dark:text-red-300 print:bg-red-100 print:text-red-800 font-bold text-xs px-2 py-0.5 rounded-md border border-red-200 dark:border-red-500/30">
                         MISMATCHED
                       </span>
                     </div>
-                    <div className="text-lg font-black text-white print:text-slate-900">
+                    <div className="text-lg font-black text-slate-900 dark:text-white print:text-slate-900">
                       {result.vinRecord?.year} {result.vinRecord?.make} {result.vinRecord?.model}
                     </div>
-                    <div className="text-xs text-slate-300 print:text-slate-600 space-y-1">
+                    <div className="text-xs text-slate-600 dark:text-slate-300 print:text-slate-600 space-y-1">
                       <p>
-                        <span className="font-semibold text-slate-400 print:text-slate-700">Claimed VIN:</span>{' '}
-                        <span className="font-mono font-bold text-red-400 print:text-red-700">{result.vin}</span>
+                        <span className="font-semibold text-slate-500 dark:text-slate-400 print:text-slate-700">Claimed VIN:</span>{' '}
+                        <span className="font-mono font-bold text-red-600 dark:text-red-400 print:text-red-700">{result.vin}</span>
                       </p>
                       <p>
-                        <span className="font-semibold text-slate-400 print:text-slate-700">Body Class:</span>{' '}
+                        <span className="font-semibold text-slate-500 dark:text-slate-400 print:text-slate-700">Body Class:</span>{' '}
                         {result.vinRecord?.bodyClass || 'Sedan'}
                       </p>
-                      <p className="text-red-400 print:text-red-700 font-semibold border-t border-slate-800 print:border-slate-100 pt-1.5 mt-1.5">
+                      <p className="text-red-600 dark:text-red-400 print:text-red-700 font-semibold border-t border-slate-100 dark:border-slate-800 print:border-slate-100 pt-1.5 mt-1.5">
                         ⚠️ Status: Submitted VIN does NOT match the physical vehicle photographed.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="text-xs text-red-300 print:text-red-900 font-medium flex items-center gap-2 bg-red-950/60 print:bg-red-50 p-2.5 rounded-lg border border-red-500/20">
+                <div className="text-xs text-red-900 dark:text-red-300 print:text-red-900 font-medium flex items-center gap-2 bg-red-100/60 dark:bg-red-950/60 print:bg-red-50 p-2.5 rounded-lg border border-red-200 dark:border-red-500/20">
                   <span>💡</span>
                   <span>
                     <strong>Resolution applied:</strong> The collision damage estimate and OEM catalog parts below are calibrated to the <strong>{result.make}</strong> in the photos. Confirm registration before ordering parts.
@@ -791,15 +857,15 @@ export default function Home() {
 
             {/* 2. VERIFIED MATCH BADGE (WHEN VIN & PHOTOS MATCH) */}
             {!result.discrepancy?.hasDiscrepancy && result.vin && result.discrepancy?.severity === 'MATCH' && (
-              <div className="bg-emerald-950/60 border border-emerald-500/50 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 text-emerald-200 print:bg-emerald-50 print:text-emerald-950 print-avoid-break">
+              <div className="bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-500/50 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 text-emerald-900 dark:text-emerald-200 print:bg-emerald-50 print:text-emerald-950 print-avoid-break">
                 <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center flex-shrink-0 font-bold shadow-md shadow-emerald-600/30">
                   ✓
                 </div>
                 <div className="text-xs sm:text-sm space-y-0.5">
-                  <p className="font-bold text-white print:text-emerald-950 text-base">{result.discrepancy.title}</p>
-                  <p className="text-emerald-300 print:text-emerald-800">{result.discrepancy.summary}</p>
+                  <p className="font-bold text-slate-900 dark:text-white print:text-emerald-950 text-base">{result.discrepancy.title}</p>
+                  <p className="text-emerald-800 dark:text-emerald-300 print:text-emerald-800">{result.discrepancy.summary}</p>
                   {result.discrepancy.visualCues && (
-                    <p className="text-emerald-400 print:text-emerald-700 text-xs italic pt-1">
+                    <p className="text-emerald-700 dark:text-emerald-400 print:text-emerald-700 text-xs italic pt-1">
                       Visual Evidence: {result.discrepancy.visualCues}
                     </p>
                   )}
@@ -809,15 +875,15 @@ export default function Home() {
 
             {/* 3. PHOTO-ONLY ASSESSMENT BADGE */}
             {!result.vin && (
-              <div className="bg-blue-950/60 border border-blue-500/40 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 text-blue-200 print:bg-blue-50 print:text-blue-950 print-avoid-break">
+              <div className="bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-500/40 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 text-blue-950 dark:text-blue-200 print:bg-blue-50 print:text-blue-950 print-avoid-break">
                 <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center flex-shrink-0 font-bold shadow-md shadow-blue-600/30">
                   📷
                 </div>
                 <div className="text-xs sm:text-sm space-y-0.5">
-                  <p className="font-bold text-white print:text-blue-950 text-base">
+                  <p className="font-bold text-slate-900 dark:text-white print:text-blue-950 text-base">
                     Photo-Identified Vehicle: {result.year} {result.make} {result.model}
                   </p>
-                  <p className="text-blue-300 print:text-blue-800">
+                  <p className="text-blue-800 dark:text-blue-300 print:text-blue-800">
                     Computer vision independently detected this vehicle with {Math.round(result.confidence * 100)}% confidence. Provide a VIN to cross-verify against official US NHTSA records.
                   </p>
                 </div>
@@ -825,46 +891,46 @@ export default function Home() {
             )}
 
             {/* ASSESSED VEHICLE SPECIFICATION CARD */}
-            <div className="bg-slate-900/70 backdrop-blur-md rounded-2xl p-6 shadow-xl border border-slate-800/80 print:border print:border-slate-300 print:bg-white print-avoid-break">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 print:border-slate-200 pb-5">
+            <div className="bg-white dark:bg-slate-900/70 backdrop-blur-md rounded-2xl p-6 shadow-sm dark:shadow-xl border border-slate-200/90 dark:border-slate-800/80 print:border print:border-slate-300 print:bg-white print-avoid-break transition-colors duration-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 print:border-slate-200 pb-5">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                       Assessed Vehicle (From Photos)
                     </span>
                     {result.discrepancy?.hasDiscrepancy && (
-                      <span className="bg-amber-500/20 text-amber-300 print:bg-amber-100 print:text-amber-900 border border-amber-500/40 text-xs font-bold px-2 py-0.5 rounded-full">
+                      <span className="bg-amber-100 text-amber-800 dark:bg-amber-500/20 dark:text-amber-300 print:bg-amber-100 print:text-amber-900 border border-amber-200 dark:border-amber-500/40 text-xs font-bold px-2 py-0.5 rounded-full">
                         Photo-Identified
                       </span>
                     )}
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-white print:text-slate-900 mt-0.5">
+                  <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white print:text-slate-900 mt-0.5">
                     {result.year} {result.make} {result.model}
                   </h2>
-                  <p className="text-sm text-slate-400 print:text-slate-600 font-medium">
+                  <p className="text-sm text-slate-600 dark:text-slate-400 print:text-slate-600 font-medium">
                     {result.trim ? `${result.trim} Trim • ` : ''}
                     {result.bodyClass || 'Passenger Vehicle'}
                     {result.color ? ` • ${result.color}` : ''}
                   </p>
                 </div>
 
-                <div className="bg-slate-950 border border-slate-700/80 print:bg-slate-50 print:border-slate-300 rounded-xl px-4 py-3 flex flex-col items-start sm:items-end shadow-inner">
+                <div className="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700/80 print:bg-slate-50 print:border-slate-300 rounded-xl px-4 py-3 flex flex-col items-start sm:items-end shadow-inner">
                   <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
                     {result.vin ? (
                       result.discrepancy?.hasDiscrepancy ? (
-                        <span className="text-red-400 print:text-red-700 flex items-center gap-1 font-bold">
+                        <span className="text-red-600 dark:text-red-400 print:text-red-700 flex items-center gap-1 font-bold">
                           <span className="w-2 h-2 rounded-full bg-red-500"></span> Mismatched VIN
                         </span>
                       ) : (
-                        <span className="text-emerald-400 print:text-emerald-700 flex items-center gap-1 font-bold">
+                        <span className="text-emerald-600 dark:text-emerald-400 print:text-emerald-700 flex items-center gap-1 font-bold">
                           <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Verified NHTSA VIN
                         </span>
                       )
                     ) : (
-                      <span className="text-blue-400 print:text-blue-700 font-bold">Photo-Only Analysis</span>
+                      <span className="text-blue-600 dark:text-blue-400 print:text-blue-700 font-bold">Photo-Only Analysis</span>
                     )}
                   </span>
-                  <span className="font-mono text-base sm:text-lg font-bold text-white print:text-slate-900 mt-0.5 tracking-wider">
+                  <span className="font-mono text-base sm:text-lg font-bold text-slate-900 dark:text-white print:text-slate-900 mt-0.5 tracking-wider">
                     {result.vin || 'NO VIN PROVIDED'}
                   </span>
                 </div>
@@ -872,40 +938,40 @@ export default function Home() {
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-5">
                 <div>
-                  <span className="text-xs text-slate-400 font-medium">Report ID</span>
-                  <p className="font-mono text-sm font-semibold text-slate-200 print:text-slate-800">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Report ID</span>
+                  <p className="font-mono text-sm font-semibold text-slate-900 dark:text-slate-200 print:text-slate-800">
                     {result.id.substring(0, 16)}
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-400 font-medium">Overall Severity</span>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Overall Severity</span>
                   <p
                     className={`text-sm font-bold ${
                       result.severityOverall === 'SEVERE'
-                        ? 'text-red-400 print:text-red-600'
+                        ? 'text-red-600 dark:text-red-400 print:text-red-600'
                         : result.severityOverall === 'MODERATE'
-                        ? 'text-amber-400 print:text-amber-600'
-                        : 'text-emerald-400 print:text-emerald-600'
+                        ? 'text-amber-600 dark:text-amber-400 print:text-amber-600'
+                        : 'text-emerald-600 dark:text-emerald-400 print:text-emerald-600'
                     }`}
                   >
                     {result.severityOverall}
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-400 font-medium">Detection Confidence</span>
-                  <p className="text-sm font-semibold text-slate-200 print:text-slate-800">
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Detection Confidence</span>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-200 print:text-slate-800">
                     {Math.round(result.confidence * 100)}%
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs text-slate-400 font-medium">Market Benchmark</span>
-                  <p className="text-sm font-semibold text-slate-200 print:text-slate-800">United States (USD)</p>
+                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Market Benchmark</span>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-200 print:text-slate-800">United States (USD)</p>
                 </div>
               </div>
             </div>
 
             {/* ESTIMATED COLLISION REPAIR COST SUMMARY */}
-            <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-[#0c1220] text-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-800/80 print:border print:border-slate-400 print:bg-slate-100 print:text-slate-900 print-avoid-break">
+            <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-950 dark:from-slate-950 dark:via-slate-900 dark:to-[#0c1220] text-white rounded-2xl p-6 sm:p-8 shadow-xl dark:shadow-2xl border border-slate-800 print:border print:border-slate-400 print:bg-slate-100 print:text-slate-900 print-avoid-break">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <span className="text-xs font-bold tracking-wider uppercase text-blue-400 print:text-blue-800">
@@ -936,7 +1002,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-slate-800 print:border-slate-300 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400 print:text-slate-600 gap-2">
+              <div className="mt-4 pt-4 border-t border-slate-700/80 dark:border-slate-800 print:border-slate-300 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400 print:text-slate-600 gap-2">
                 <span>Standard US body shop collision repair matrix ($95/hr labor + OEM parts)</span>
                 {result.vin && (
                   <span className="font-mono text-blue-400 print:text-slate-800">Audited against VIN: {result.vin}</span>
@@ -947,21 +1013,21 @@ export default function Home() {
             {/* ITEMIZED DAMAGE PARTS LIST WITH TRANSPARENT PRICING & OEM PARTS */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold text-white print:text-slate-900">
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white print:text-slate-900">
                   Damaged Components & OEM Part Analysis ({result.findings.length})
                 </h3>
-                <span className="text-xs text-slate-400 font-medium">Standardized Labor & Parts Breakdown</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">Standardized Labor & Parts Breakdown</span>
               </div>
 
               <div className="space-y-3">
                 {result.findings.map((finding, index) => {
-                  let badgeClass = 'bg-amber-500/20 text-amber-300 border-amber-500/40 print:bg-amber-100 print:text-amber-900';
+                  let badgeClass = 'bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-500/20 dark:text-amber-300 dark:border-amber-500/40 print:bg-amber-100 print:text-amber-900';
                   let borderLeft = 'border-l-amber-500';
                   if (finding.severity === 'SEVERE') {
-                    badgeClass = 'bg-red-500/20 text-red-300 border-red-500/40 print:bg-red-100 print:text-red-900';
+                    badgeClass = 'bg-red-100 text-red-800 border-red-200 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/40 print:bg-red-100 print:text-red-900';
                     borderLeft = 'border-l-red-500';
                   } else if (finding.severity === 'LIGHT') {
-                    badgeClass = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 print:bg-emerald-100 print:text-emerald-900';
+                    badgeClass = 'bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-300 dark:border-emerald-500/40 print:bg-emerald-100 print:text-emerald-900';
                     borderLeft = 'border-l-emerald-500';
                   }
 
@@ -972,62 +1038,62 @@ export default function Home() {
                   return (
                     <div
                       key={finding.id}
-                      className={`bg-slate-900/70 backdrop-blur-md print:bg-white rounded-xl p-5 shadow-lg border border-slate-800/80 print:border-slate-300 border-l-4 ${borderLeft} space-y-3.5 print-avoid-break`}
+                      className={`bg-white dark:bg-slate-900/70 backdrop-blur-md print:bg-white rounded-xl p-5 shadow-sm dark:shadow-lg border border-slate-200/90 dark:border-slate-800/80 print:border-slate-300 border-l-4 ${borderLeft} space-y-3.5 print-avoid-break transition-colors duration-200`}
                     >
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex items-center gap-3">
-                          <span className="w-7 h-7 rounded-full bg-slate-950 border border-slate-700/80 print:bg-slate-100 text-slate-300 print:text-slate-700 font-bold text-xs flex items-center justify-center">
+                          <span className="w-7 h-7 rounded-full bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-700/80 print:bg-slate-100 text-slate-700 dark:text-slate-300 print:text-slate-700 font-bold text-xs flex items-center justify-center">
                             {index + 1}
                           </span>
-                          <h4 className="font-bold text-base text-white print:text-slate-900">{finding.name}</h4>
+                          <h4 className="font-bold text-base text-slate-900 dark:text-white print:text-slate-900">{finding.name}</h4>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${badgeClass}`}>
                             {finding.severity}
                           </span>
-                          <span className="text-xs font-bold text-white print:text-slate-900 bg-slate-950 print:bg-slate-100 px-2.5 py-1 rounded-md border border-slate-800 print:border-slate-300">
+                          <span className="text-xs font-bold text-slate-900 dark:text-white print:text-slate-900 bg-slate-100 dark:bg-slate-950 print:bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 print:border-slate-300">
                             ${finding.costLow} - ${finding.costHigh}
                           </span>
                         </div>
                       </div>
 
-                      <p className="text-sm text-slate-300 print:text-slate-700 pl-10 leading-relaxed">
+                      <p className="text-sm text-slate-600 dark:text-slate-300 print:text-slate-700 pl-10 leading-relaxed">
                         {finding.description}
                       </p>
 
                       {/* COMPONENT BREAKDOWN ROW: OEM PART & TRANSPARENT PRICING FORMULA */}
-                      <div className="pl-10 pt-3 border-t border-slate-800/80 print:border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="pl-10 pt-3 border-t border-slate-100 dark:border-slate-800/80 print:border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium text-slate-400 print:text-slate-600">OEM Part:</span>
-                          <span className="font-mono text-xs font-bold bg-slate-950 print:bg-slate-100 text-blue-400 print:text-slate-900 px-2.5 py-1 rounded border border-slate-700/80 print:border-slate-300">
+                          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 print:text-slate-600">OEM Part:</span>
+                          <span className="font-mono text-xs font-bold bg-slate-100 dark:bg-slate-950 print:bg-slate-100 text-blue-600 dark:text-blue-400 print:text-slate-900 px-2.5 py-1 rounded border border-slate-200 dark:border-slate-700/80 print:border-slate-300">
                             {finding.oemNumber || '52119-0X938'}
                           </span>
-                          <span className="text-emerald-400 print:text-emerald-700 text-xs font-bold flex items-center gap-1">
+                          <span className="text-emerald-600 dark:text-emerald-400 print:text-emerald-700 text-xs font-bold flex items-center gap-1">
                             ✓ OEM Verified
                           </span>
                           {finding.oemNote && (
-                            <span className="text-[11px] text-amber-400 print:text-amber-700 italic">
+                            <span className="text-[11px] text-amber-600 dark:text-amber-400 print:text-amber-700 italic">
                               ({finding.oemNote})
                             </span>
                           )}
                         </div>
 
                         {/* HOW THIS PRICE WAS PRODUCED (TRANSPARENT FORMULA BREAKDOWN) */}
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 print:text-slate-600 bg-slate-950/90 print:bg-slate-50 border border-slate-800 print:border-slate-200 px-3 py-1.5 rounded-lg">
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400 print:text-slate-600 bg-slate-50 dark:bg-slate-950/90 print:bg-slate-50 border border-slate-200 dark:border-slate-800 print:border-slate-200 px-3 py-1.5 rounded-lg">
                           <span>
-                            <span className="text-slate-500 print:text-slate-400">Part:</span>{' '}
-                            <strong className="text-white print:text-slate-900">${partCost}</strong>
+                            <span className="text-slate-400 dark:text-slate-500 print:text-slate-400">Part:</span>{' '}
+                            <strong className="text-slate-900 dark:text-white print:text-slate-900">${partCost}</strong>
                           </span>
                           <span>•</span>
                           <span>
-                            <span className="text-slate-500 print:text-slate-400">Labor:</span>{' '}
-                            <strong className="text-white print:text-slate-900">{laborHours} hrs</strong> @ $95/hr (
-                            <strong className="text-white print:text-slate-900">${laborCost}</strong>)
+                            <span className="text-slate-400 dark:text-slate-500 print:text-slate-400">Labor:</span>{' '}
+                            <strong className="text-slate-900 dark:text-white print:text-slate-900">{laborHours} hrs</strong> @ $95/hr (
+                            <strong className="text-slate-900 dark:text-white print:text-slate-900">${laborCost}</strong>)
                           </span>
                           <span>•</span>
                           <span>
-                            <span className="text-slate-500 print:text-slate-400">Total:</span>{' '}
-                            <strong className="text-blue-400 print:text-blue-700">
+                            <span className="text-slate-400 dark:text-slate-500 print:text-slate-400">Total:</span>{' '}
+                            <strong className="text-blue-600 dark:text-blue-400 print:text-blue-700">
                               ${finding.costLow}-${finding.costHigh}
                             </strong>
                           </span>
@@ -1066,7 +1132,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="w-full sm:w-1/2 py-3.5 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-black/20"
+                className="w-full sm:w-1/2 py-3.5 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-300 dark:border-slate-700/80 text-slate-800 dark:text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm dark:shadow-lg dark:shadow-black/20"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -1081,7 +1147,7 @@ export default function Home() {
                   setPreviewUrls([]);
                   setResult(null);
                 }}
-                className="w-full sm:w-1/2 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-blue-600/30"
+                className="w-full sm:w-1/2 py-3.5 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl transition-all text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-600/30"
               >
                 Start Another Estimate
               </button>
@@ -1093,9 +1159,9 @@ export default function Home() {
       </main>
 
       {/* 3. EXECUTIVE ENTERPRISE FOOTER */}
-      <footer className="bg-[#04060a] border-t border-slate-800/80 text-slate-400 print:hidden mt-auto">
+      <footer className="bg-white dark:bg-[#04060a] border-t border-slate-200/90 dark:border-slate-800/80 text-slate-600 dark:text-slate-400 print:hidden mt-auto transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 pb-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-slate-800/80">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b border-slate-200 dark:border-slate-800/80">
             {/* COLUMN 1: PLATFORM IDENTITY */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
@@ -1104,12 +1170,12 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
-                <span className="font-black text-white text-base tracking-tight">CARFIX US ENTERPRISE</span>
+                <span className="font-black text-slate-900 dark:text-white text-base tracking-tight">CARFIX US ENTERPRISE</span>
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                 The authoritative AI collision damage estimating platform for independent US body shops, automotive forensic auditors, and appraisal networks.
               </p>
-              <div className="flex items-center gap-2 text-[11px] text-emerald-400 font-semibold pt-1">
+              <div className="flex items-center gap-2 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold pt-1">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                 Federal DOT / NHTSA vPIC Feed Online
               </div>
@@ -1117,8 +1183,8 @@ export default function Home() {
 
             {/* COLUMN 2: REGULATORY STANDARDS */}
             <div className="space-y-2.5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-white">Regulatory Standards</h4>
-              <ul className="text-xs space-y-1.5 text-slate-400">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Regulatory Standards</h4>
+              <ul className="text-xs space-y-1.5 text-slate-500 dark:text-slate-400">
                 <li>• US DOT 49 CFR Part 565 Compliant</li>
                 <li>• NHTSA Federal Vehicle Safety Registry</li>
                 <li>• ISO 3779 VIN Verification Standards</li>
@@ -1128,8 +1194,8 @@ export default function Home() {
 
             {/* COLUMN 3: REPAIR & OEM MATRICES */}
             <div className="space-y-2.5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-white">Collision Benchmarks</h4>
-              <ul className="text-xs space-y-1.5 text-slate-400">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Collision Benchmarks</h4>
+              <ul className="text-xs space-y-1.5 text-slate-500 dark:text-slate-400">
                 <li>• $95.00/hr National US Body Labor Rate</li>
                 <li>• Mitchell / CCC ONE Damage Index Alignment</li>
                 <li>• Real-Time OEM Parts Registry</li>
@@ -1139,8 +1205,8 @@ export default function Home() {
 
             {/* COLUMN 4: FORENSICS & SECURITY */}
             <div className="space-y-2.5">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-white">Forensic Fraud Shield</h4>
-              <ul className="text-xs space-y-1.5 text-slate-400">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Forensic Fraud Shield</h4>
+              <ul className="text-xs space-y-1.5 text-slate-500 dark:text-slate-400">
                 <li>• Real-Time Multi-Modal Emblem Forensics</li>
                 <li>• Automated Cross-Audit (VIN vs. Photos)</li>
                 <li>• Side-by-Side Model Discrepancy Alerting</li>
@@ -1152,12 +1218,12 @@ export default function Home() {
           {/* BOTTOM BAR: COPYRIGHT & TRUST SEALS */}
           <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
             <p>© {new Date().getFullYear()} CarFix Technologies Inc. All rights reserved. US Patent Pending.</p>
-            <div className="flex items-center gap-4 text-slate-400">
-              <span className="hover:text-white transition-colors cursor-pointer">Privacy Policy</span>
+            <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400">
+              <span className="hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">Privacy Policy</span>
               <span>•</span>
-              <span className="hover:text-white transition-colors cursor-pointer">Terms of Appraisal</span>
+              <span className="hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">Terms of Appraisal</span>
               <span>•</span>
-              <span className="hover:text-white transition-colors cursor-pointer">NHTSA Data Disclaimer</span>
+              <span className="hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer">NHTSA Data Disclaimer</span>
             </div>
           </div>
         </div>
