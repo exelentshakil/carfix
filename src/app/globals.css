@@ -60,14 +60,14 @@ body {
 /* HIGH-PRECISION ENTERPRISE PRINT / PDF STYLES */
 @media print {
   @page {
-    margin: 10mm 12mm;
+    margin: 8mm 10mm;
     size: letter portrait;
   }
 
   body {
     background: #ffffff !important;
     color: #0f172a !important;
-    font-size: 11pt !important;
+    font-size: 9.5pt !important;
   }
 
   /* Force background colors and borders to print accurately */
@@ -97,6 +97,8 @@ body {
     background: #ffffff !important;
     padding: 0 !important;
     margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
     min-height: auto !important;
   }
 }
