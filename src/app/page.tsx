@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { ConfirmCarModal, VehicleData } from "@/components/ConfirmCarModal";
 import { LeadCaptureModal } from "@/components/LeadCaptureModal";
 import {
@@ -16,7 +15,6 @@ import {
   Sparkles,
   Loader2,
   ArrowRight,
-  Users
 } from "lucide-react";
 
 interface DecodedVehicle {
@@ -568,18 +566,6 @@ export default function Home() {
               <span className="text-slate-300 dark:text-slate-700">|</span>
               <span className="text-blue-600 dark:text-blue-400 font-mono text-[11px]">ISO 3779</span>
             </div>
-
-            {/* SHOP ADMIN CRM LINK */}
-            <Link
-              href="/admin"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 font-bold text-xs transition-colors shadow-sm cursor-pointer"
-            >
-              <Users className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Shop Admin CRM</span>
-              <span className="bg-cyan-600 text-white dark:bg-cyan-400 dark:text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-full">
-                LEADS
-              </span>
-            </Link>
 
             {/* LIGHT / DARK MODE SWITCHER */}
             <button
