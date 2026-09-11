@@ -17,6 +17,7 @@ import {
   Sparkles,
   Loader2,
   ArrowRight,
+  LogOut,
 } from "lucide-react";
 
 interface DecodedVehicle {
@@ -153,6 +154,32 @@ export default function Home() {
   const [pendingVehicle, setPendingVehicle] = useState<VehicleData | null>(null);
   const [capturedLeadId, setCapturedLeadId] = useState<string | null>(null);
   const [isPreIdentifying, setIsPreIdentifying] = useState(false);
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false);
+
+  // Check admin session on landing page load
+  useEffect(() => {
+    const checkAdminAuth = async () => {
+      try {
+        const res = await fetch('/api/admin/auth');
+        const data = await res.json();
+        if (data && data.authenticated) {
+          setIsAdminLoggedIn(true);
+        }
+      } catch {
+        // ignore
+      }
+    };
+    checkAdminAuth();
+  }, []);
+
+  const handleAdminLogout = async () => {
+    try {
+      await fetch('/api/admin/auth', { method: 'DELETE' });
+      setIsAdminLoggedIn(false);
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
 
   // Initialize theme (Default: Light Mode)
   useEffect(() => {
@@ -600,6 +627,19 @@ export default function Home() {
                 </>
               )}
             </button>
+
+            {/* LOG OUT BUTTON (ONLY VISIBLE IF ADMIN IS LOGGED IN) */}
+            {isAdminLoggedIn && (
+              <button
+                type="button"
+                onClick={handleAdminLogout}
+                title="Log out of Admin session"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all text-xs font-semibold cursor-pointer bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-400 border-rose-200 dark:border-rose-900/60 shadow-sm"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Log Out</span>
+              </button>
+            )}
 
             {step === 'results' && (
               <button
