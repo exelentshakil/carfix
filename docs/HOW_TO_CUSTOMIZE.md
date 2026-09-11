@@ -114,3 +114,23 @@ $$\text{Total Estimate} = \text{Base OEM Part Cost} + (\text{Labor Hours} \times
    - **Lead Drawer**: Click "View Details" to open the slide-over drawer with one-click `tel:` and `mailto:` links, damage summaries, and photo thumbnails.
    - **Internal Shop Notes**: Add private notes for estimators and click "Save Notes".
    - **Export CSV**: Click "Export CSV" to download the leads spreadsheet for Excel or Google Sheets.
+
+---
+
+## 6. How to Set or Change the Admin CRM Password
+
+The `/admin` route is password protected. To set or change your shop manager password:
+
+1. **Local Development**:
+   Add or edit `ADMIN_PASSWORD` in your `.env.local` file:
+   ```bash
+   ADMIN_PASSWORD="your-secure-shop-password"
+   ```
+2. **Production / Vercel**:
+   Go to your Vercel Project Settings -> **Environment Variables** -> add `ADMIN_PASSWORD`.
+
+### How It Works
+- Anyone navigating to `/admin` sees a locked **Admin CRM Access** portal.
+- Submitting the correct password generates a cryptographically signed HMAC SHA-256 session token stored in an `httpOnly` secure cookie (`carfix_admin_session`) valid for 7 days.
+- Inbound leads APIs (`GET /api/leads`, `GET /api/leads/[id]`, `PATCH /api/leads/[id]`) automatically verify this token, keeping customer phone numbers and repair data secure.
+- Click the **Log Out** button in the top-right header anytime to end the session immediately.

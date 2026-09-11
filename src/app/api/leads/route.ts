@@ -3,9 +3,18 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { addMockLead, getMockLeads, LeadRecord } from '@/lib/leadStore';
+import { cookies } from 'next/headers';
+import { ADMIN_COOKIE_NAME, verifyAdminSessionToken } from '@/lib/adminAuth';
 
 export async function GET(request: Request) {
   try {
+    if (process.env.ADMIN_PASSWORD) {
+      const cookieStore = await cookies();
+      const sessionToken = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
+      if (!verifyAdminSessionToken(sessionToken)) {
+        return NextResponse.json({ error: 'Unauthorized. Admin password required.' }, { status: 401 });
+      }
+    }
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
     const search = searchParams.get('search')?.toLowerCase();

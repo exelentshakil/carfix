@@ -29,6 +29,9 @@ import {
   PhoneCall,
   Send,
   Save,
+  Lock,
+  LogOut,
+  KeyRound,
 } from 'lucide-react';
 import { LeadRecord } from '@/lib/leadStore';
 
@@ -71,6 +74,11 @@ const STATUS_OPTIONS: Array<{
 ];
 
 export default function AdminCrmPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isSubmittingAuth, setIsSubmittingAuth] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+
   const [leads, setLeads] = useState<LeadRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,6 +88,58 @@ export default function AdminCrmPage() {
   const [internalNotesDraft, setInternalNotesDraft] = useState('');
   const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [saveNotesSuccess, setSaveNotesSuccess] = useState(false);
+
+  const checkAuth = async () => {
+    try {
+      const res = await fetch('/api/admin/auth');
+      const data = await res.json();
+      setIsAuthenticated(Boolean(data.authenticated));
+    } catch {
+      setIsAuthenticated(false);
+    }
+  };
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminPassword.trim()) {
+      setAuthError('Please enter the admin password');
+      return;
+    }
+    setIsSubmittingAuth(true);
+    setAuthError(null);
+    try {
+      const res = await fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Invalid admin password');
+      }
+      setIsAuthenticated(true);
+      setAdminPassword('');
+    } catch (err: any) {
+      setAuthError(err.message || 'Authentication failed');
+    } finally {
+      setIsSubmittingAuth(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/auth', { method: 'DELETE' });
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setIsAuthenticated(false);
+      setLeads([]);
+    }
+  };
 
   const fetchLeads = async () => {
     setIsLoading(true);
@@ -91,6 +151,10 @@ export default function AdminCrmPage() {
       const res = await fetch(url);
       const data = await res.json();
       if (!res.ok || !data.success) {
+        if (res.status === 401) {
+          setIsAuthenticated(false);
+          return;
+        }
         throw new Error(data.error || 'Failed to fetch leads');
       }
       setLeads(data.leads || []);
@@ -103,9 +167,11 @@ export default function AdminCrmPage() {
   };
 
   useEffect(() => {
-    fetchLeads();
+    if (isAuthenticated) {
+      fetchLeads();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  }, [statusFilter, isAuthenticated]);
 
   // Open drawer and sync internal notes
   const openLeadDetails = (lead: LeadRecord) => {
@@ -275,6 +341,138 @@ export default function AdminCrmPage() {
     }
   };
 
+  // 1. Checking Session State
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center p-4">
+        <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4">
+          <RefreshCw className="w-6 h-6 text-cyan-400 animate-spin" />
+        </div>
+        <p className="text-sm font-semibold text-slate-300 tracking-wide">
+          Verifying Admin Session...
+        </p>
+      </div>
+    );
+  }
+
+  // 2. Password Protected Gate
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between relative overflow-hidden">
+        {/* Ambient glow */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-cyan-500/10 blur-[140px] pointer-events-none rounded-full" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[300px] bg-indigo-500/10 blur-[140px] pointer-events-none rounded-full" />
+
+        {/* Top Header */}
+        <header className="p-6 flex items-center justify-between relative z-10">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-800 backdrop-blur-sm"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            <span>Back to Customer Estimator</span>
+          </Link>
+
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>System Online</span>
+          </div>
+        </header>
+
+        {/* Center Auth Card */}
+        <main className="flex-1 flex items-center justify-center px-4 py-8 relative z-10">
+          <div className="w-full max-w-md bg-slate-900/90 border border-slate-800/80 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl">
+            <div className="flex flex-col items-center text-center">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-cyan-600/20 to-indigo-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-5 shadow-inner">
+                <Lock className="w-8 h-8" />
+              </div>
+
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-bold uppercase tracking-wider mb-2">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Shop Manager Portal</span>
+              </div>
+
+              <h2 className="text-2xl font-black tracking-tight text-white">
+                Admin CRM Access
+              </h2>
+              <p className="text-xs text-slate-400 mt-2 leading-relaxed max-w-sm">
+                Enter your shop administrator password to access inbound collision repair leads, customer contacts, and pipeline metrics.
+              </p>
+            </div>
+
+            <form onSubmit={handleLogin} className="mt-8 space-y-4">
+              {authError && (
+                <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold">{authError}</p>
+                    <p className="text-[11px] text-rose-400/80 mt-0.5">
+                      Verify that your password matches <code className="bg-rose-950/60 px-1 py-0.5 rounded text-rose-200">ADMIN_PASSWORD</code> in your environment.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center justify-between">
+                  <span>Admin Password</span>
+                  <span className="text-[10px] text-slate-500 font-normal">Encrypted HMAC Session</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={adminPassword}
+                    onChange={(e) => {
+                      setAdminPassword(e.target.value);
+                      if (authError) setAuthError(null);
+                    }}
+                    placeholder="Enter shop admin password"
+                    autoFocus
+                    required
+                    className="w-full px-4 py-3.5 rounded-xl bg-slate-950/80 border border-slate-700/80 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 text-white placeholder-slate-500 text-sm font-medium outline-none transition-all pr-10"
+                  />
+                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500">
+                    <KeyRound className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmittingAuth || !adminPassword.trim()}
+                className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-600 via-cyan-500 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-cyan-600/25 flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmittingAuth ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Verifying Access...</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    <span>Unlock CRM Portal</span>
+                  </>
+                )}
+              </button>
+            </form>
+
+            <div className="mt-6 pt-5 border-t border-slate-800 text-center">
+              <p className="text-[11px] text-slate-500">
+                Authorized access only. Session valid for 7 days.
+              </p>
+            </div>
+          </div>
+        </main>
+
+        {/* Footer */}
+        <footer className="p-6 text-center text-xs text-slate-600 relative z-10">
+          <p>{siteConfig.name} Collision Intelligence Platform &copy; {new Date().getFullYear()}</p>
+        </footer>
+      </div>
+    );
+  }
+
+  // 3. Authenticated CRM Portal
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
       {/* 1. TOP NAV / EXECUTIVE BAR */}
@@ -324,6 +522,15 @@ export default function AdminCrmPage() {
             >
               <FileSpreadsheet className="w-4 h-4" />
               <span>Export CSV</span>
+            </button>
+
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-colors flex items-center gap-1.5 cursor-pointer"
+              title="Log Out of Admin CRM"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Log Out</span>
             </button>
           </div>
         </div>

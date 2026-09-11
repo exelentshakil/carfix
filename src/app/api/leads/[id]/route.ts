@@ -3,12 +3,21 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase';
 import { getMockLeads, updateMockLead } from '@/lib/leadStore';
+import { cookies } from 'next/headers';
+import { ADMIN_COOKIE_NAME, verifyAdminSessionToken } from '@/lib/adminAuth';
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (process.env.ADMIN_PASSWORD) {
+      const cookieStore = await cookies();
+      const sessionToken = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
+      if (!verifyAdminSessionToken(sessionToken)) {
+        return NextResponse.json({ error: 'Unauthorized. Admin password required.' }, { status: 401 });
+      }
+    }
     const { id } = await params;
 
     const hasSupabase = Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -71,6 +80,13 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    if (process.env.ADMIN_PASSWORD) {
+      const cookieStore = await cookies();
+      const patchSessionToken = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
+      if (!verifyAdminSessionToken(patchSessionToken)) {
+        return NextResponse.json({ error: 'Unauthorized. Admin password required.' }, { status: 401 });
+      }
+    }
     const { id } = await params;
     const updates = await request.json();
 
