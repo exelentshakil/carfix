@@ -1,5 +1,7 @@
 'use client';
 
+import { siteConfig } from '@/config/site';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
@@ -385,7 +387,7 @@ export default function AdminCrmPage() {
                 {formatCurrency(kpis.averageTicket)}
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">Based on $95/hr labor benchmark</p>
+            <p className="text-[11px] text-slate-400 mt-1">Based on {siteConfig.laborRateBenchmark} labor benchmark</p>
           </div>
 
           {/* ACTION REQUIRED / NEW LEADS */}

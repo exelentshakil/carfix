@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { calculateCostEstimate, lookupOemPart } from '@/lib/pricingRules';
+import { calculateCostEstimate, lookupOemPart, US_LABOR_RATE } from '@/lib/pricingRules';
 import { decodeVinWithNhtsa, DecodedVehicle } from '@/lib/vinService';
 import { evaluateVehicleDiscrepancy, DiscrepancyReport, VisualVehicleInfo, VinVehicleInfo } from '@/lib/discrepancy';
 import { supabaseAdmin } from '@/lib/supabase';
@@ -234,7 +234,7 @@ export async function POST(request: Request) {
         basePartCost: estimate.baseCost,
         laborHours: estimate.laborHours,
         laborCost: estimate.laborCost,
-        laborRate: 95,
+        laborRate: US_LABOR_RATE,
         oemNumber: oemNumber,
         oemStatus: isResolved ? "RESOLVED" : "PENDING",
         oemNote: isResolved

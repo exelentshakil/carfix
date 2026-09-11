@@ -14,7 +14,7 @@ CARFIX US transforms inbound collision traffic into high-converting repair shop 
 1. **Intake & Vehicle Discrepancy Auditing**: Customers upload collision photos (left column) and enter their 17-character VIN or select manual attributes (right column) with instant US DOT NHTSA vPIC decoding.
 2. **Step 1 Modal — Vehicle Confirmation ("Is this your car?")**: Verifies the vehicle model and year, allowing one-click confirmation or editing.
 3. **Step 2 Modal — Gated Lead Capture ("Your calculation is almost ready")**: Collects verified Name, Phone (+1), and Email before initiating token-heavy forensic vision analysis.
-4. **Forensic Damage Report**: Delivers OEM part itemization, labor hours ($95/hr US benchmark), severity ratings, and VIN vs. photo discrepancy alerts.
+4. **Forensic Damage Report**: Delivers OEM part itemization, labor hours ($150/hr US benchmark), severity ratings, and VIN vs. photo discrepancy alerts.
 5. **Executive SaaS Lead Management CRM (`/admin`)**: A centralized dashboard for collision shop estimators and managers to track inbound leads, update pipeline statuses (`NEW`, `CONTACTED`, `ESTIMATING`, `WON`, `LOST`), inspect damage reports, and export to CSV.
 
 ---
@@ -51,7 +51,7 @@ CARFIX US transforms inbound collision traffic into high-converting repair shop 
          ▼ (Submits Lead to /api/leads & stores in Supabase)
 [ Forensic AI Analysis Engine ]
    ├── Gemini 2.5 Flash Vision Inspection
-   ├── OEM Part Matching & $95/hr Labor Calculation
+   ├── OEM Part Matching & $150/hr Labor Calculation
    └── Discrepancy Detection (VIN vs. Visual Vehicle)
          │
          ▼
@@ -115,7 +115,7 @@ Matching the carfix.am layout standard:
 - Multi-photo damage localization and severity scoring (LIGHT, MODERATE, SEVERE).
 - Part mapping: `bumper_front`, `bumper_rear`, `fender`, `door`, `hood`, `grille`, `headlight`, `taillight`, `wheel`, `mirror`, `glass`, `frame`, `other`.
 - US Collision Repair Economics:
-  - Benchmark US labor rate: $95.00 / hour.
+  - Benchmark US labor rate: $150.00 / hour.
   - Material and refinish allowances.
   - Authoritative OEM part matching.
 - Vehicle Discrepancy Auditing:

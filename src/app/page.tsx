@@ -1,5 +1,7 @@
 'use client';
 
+import { siteConfig } from "@/config/site";
+
 import { useState, useEffect } from "react";
 import { ConfirmCarModal, VehicleData } from "@/components/ConfirmCarModal";
 import { LeadCaptureModal } from "@/components/LeadCaptureModal";
@@ -114,7 +116,7 @@ const SCAN_STAGES = [
   },
   {
     title: 'Collision Pricing & Labor Benchmark',
-    subtitle: 'Synthesizing national $95.00/hr labor matrix & compiling certified appraisal...',
+    subtitle: 'Synthesizing national $150.00/hr labor matrix & compiling certified appraisal...',
   },
 ];
 
@@ -206,7 +208,7 @@ export default function Home() {
   }, [step]);
 
   const handleVinLookup = async (inputVin: string) => {
-    const cleanVin = inputVin.trim().toUpperCase();
+    const cleanVin = inputVin.trim().toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, "");
     setVin(cleanVin);
 
     if (cleanVin.length === 0) {
@@ -215,9 +217,10 @@ export default function Home() {
       return;
     }
 
-    if (cleanVin.length !== 17) {
+    // Do not show error while user is still typing (1-16 chars)
+    if (cleanVin.length < 17) {
       setDecodedVehicle(null);
-      setVinError(`VIN must be 17 characters (${cleanVin.length}/17) or clear field for photo-only analysis`);
+      setVinError(null);
       return;
     }
 
@@ -229,20 +232,23 @@ export default function Home() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to decode VIN with US NHTSA registry');
+        throw new Error(data.error || "Failed to decode VIN with US NHTSA registry");
       }
 
-      setDecodedVehicle(data);
-      if (data) {
-        if (data.year) setManualYear(String(data.year));
-        if (data.make) setManualMake(data.make);
-        if (data.model) setManualModel(data.model);
-        if (data.trim) setManualTrim(data.trim);
-        if (data.bodyClass) setManualBody(data.bodyClass);
+      // Authoritative vehicle payload from API
+      const vehicle: DecodedVehicle = data.vehicle || data;
+      setDecodedVehicle(vehicle);
+
+      if (vehicle) {
+        if (vehicle.year) setManualYear(String(vehicle.year));
+        if (vehicle.make) setManualMake(vehicle.make);
+        if (vehicle.model) setManualModel(vehicle.model);
+        if (vehicle.trim) setManualTrim(vehicle.trim);
+        if (vehicle.bodyClass) setManualBody(vehicle.bodyClass);
       }
     } catch (err: any) {
       setDecodedVehicle(null);
-      setVinError(err.message || 'Could not verify VIN in NHTSA database.');
+      setVinError(err.message || "Could not verify VIN in NHTSA database.");
     } finally {
       setIsDecodingVin(false);
     }
@@ -524,17 +530,21 @@ export default function Home() {
       <header className="bg-white/90 dark:bg-[#06080e]/90 border-b border-slate-200/80 dark:border-slate-800/80 sticky top-0 z-50 shadow-sm dark:shadow-2xl backdrop-blur-xl print:hidden transition-colors duration-200">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="relative flex items-center justify-center">
-              <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20 dark:shadow-blue-500/25 ring-1 ring-black/5 dark:ring-white/20">
-                <svg className="w-6 h-6 text-white drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+            {siteConfig.logoUrl ? (
+              <img src={siteConfig.logoUrl} alt={siteConfig.name} className="h-10 w-auto object-contain" />
+            ) : (
+              <div className="relative flex items-center justify-center">
+                <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20 dark:shadow-blue-500/25 ring-1 ring-black/5 dark:ring-white/20">
+                  <svg className="w-6 h-6 text-white drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 ring-2 ring-white dark:ring-[#06080e]"></span>
+                </span>
               </div>
-              <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500 ring-2 ring-white dark:ring-[#06080e]"></span>
-              </span>
-            </div>
+            )}
 
             <div>
               <div className="flex items-center gap-2">
@@ -561,7 +571,7 @@ export default function Home() {
               </span>
               <span className="text-slate-300 dark:text-slate-700">|</span>
               <span className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
-                Labor Benchmark: <strong className="text-slate-900 dark:text-white">$95/hr</strong>
+                Labor Benchmark: <strong className="text-slate-900 dark:text-white">{siteConfig.laborRateBenchmark}</strong>
               </span>
               <span className="text-slate-300 dark:text-slate-700">|</span>
               <span className="text-blue-600 dark:text-blue-400 font-mono text-[11px]">ISO 3779</span>
@@ -636,13 +646,13 @@ export default function Home() {
             <div className="text-center sm:text-left space-y-1.5 pb-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold mb-1">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>US Collision Intelligence Platform</span>
+                <span>{siteConfig.hero.categoryBadge}</span>
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-                Enterprise Auto Collision Appraisal
+                {siteConfig.hero.title}
               </h1>
               <p className="text-slate-600 dark:text-slate-400 text-sm max-w-3xl leading-relaxed">
-                Upload collision photos and vehicle details for automated forensic part identification, OEM catalog matching, and standardized collision repair estimates.
+                {siteConfig.hero.subtitle}
               </p>
             </div>
 
@@ -851,6 +861,13 @@ export default function Home() {
                         Decode VIN
                       </button>
                     </div>
+
+                    {vin.length > 0 && vin.length < 17 && (
+                      <div className="flex items-center justify-between text-[11px] text-slate-400 font-mono px-1">
+                        <span>Enter 17 characters for automatic lookup</span>
+                        <span>{vin.length}/17</span>
+                      </div>
+                    )}
 
                     {vinError && (
                       <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">

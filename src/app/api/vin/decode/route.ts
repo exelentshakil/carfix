@@ -1,25 +1,33 @@
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from "next/server";
-import { decodeVinWithNhtsa } from "@/lib/vinService";
+import { decodeVinWithNhtsa, decodeVinFallback } from "@/lib/vinService";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const vin = searchParams.get("vin");
+  const rawVin = searchParams.get("vin");
 
-  if (!vin || vin.trim().length !== 17) {
+  if (!rawVin) {
     return NextResponse.json(
       { error: "A valid 17-character VIN is required" },
       { status: 400 }
     );
   }
 
-  const cleanVin = vin.trim().toUpperCase();
-  const vehicle = await decodeVinWithNhtsa(cleanVin);
+  // Clean VIN: remove whitespace, hyphens, non-alphanumeric characters
+  const cleanVin = rawVin.trim().toUpperCase().replace(/[^A-HJ-NPR-Z0-9]/g, '');
+
+  if (cleanVin.length !== 17) {
+    return NextResponse.json(
+      { error: `VIN must be exactly 17 characters (received ${cleanVin.length}/17)` },
+      { status: 400 }
+    );
+  }
+
+  let vehicle = await decodeVinWithNhtsa(cleanVin);
 
   if (!vehicle) {
-    return NextResponse.json(
-      { error: "Could not decode vehicle specifications for this VIN" },
-      { status: 404 }
-    );
+    vehicle = decodeVinFallback(cleanVin);
   }
 
   return NextResponse.json({

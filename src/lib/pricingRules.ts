@@ -1,3 +1,4 @@
+import { siteConfig } from "@/config/site";
 export type DamageSeverity = "LIGHT" | "MODERATE" | "SEVERE";
 
 export interface PricingRule {
@@ -6,7 +7,7 @@ export interface PricingRule {
 }
 
 // Standard US body shop collision labor rate in USD ($/hr)
-export const US_LABOR_RATE = 95;
+export const US_LABOR_RATE = siteConfig.laborRatePerHour; // $150/hr
 
 export const PRICING_MATRIX: Record<string, Record<DamageSeverity, PricingRule>> = {
   bumper_front: {
