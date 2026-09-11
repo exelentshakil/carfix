@@ -38,3 +38,36 @@ create table if not exists parts (
 -- never from the browser, so RLS can stay enabled with no public policies.
 alter table analyses enable row level security;
 alter table parts enable row level security;
+
+-- Leads: captured customer contact information with vehicle & damage estimate
+create table if not exists carfix_leads (
+  id text primary key default gen_random_uuid()::text,
+  full_name text not null,
+  phone text not null,
+  email text not null,
+  vehicle_year int,
+  vehicle_make text,
+  vehicle_model text,
+  vehicle_trim text,
+  vehicle_body text,
+  transmission text,
+  fuel_type text,
+  vin text,
+  notes text,
+  image_urls text[],
+  estimated_cost_low numeric,
+  estimated_cost_high numeric,
+  damage_summary text,
+  status text not null default 'NEW', -- NEW, CONTACTED, ESTIMATING, WON, LOST
+  analysis_id text,
+  internal_notes text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+create index if not exists idx_leads_status on carfix_leads(status);
+create index if not exists idx_leads_created_at on carfix_leads(created_at desc);
+create index if not exists idx_leads_email on carfix_leads(email);
+create index if not exists idx_leads_phone on carfix_leads(phone);
+
+alter table carfix_leads enable row level security;

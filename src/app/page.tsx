@@ -1,6 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { ConfirmCarModal, VehicleData } from "@/components/ConfirmCarModal";
+import { LeadCaptureModal } from "@/components/LeadCaptureModal";
+import {
+  Car,
+  Camera,
+  Plus,
+  Trash2,
+  ShieldCheck,
+  CheckCircle2,
+  AlertCircle,
+  Info,
+  Sparkles,
+  Loader2,
+  ArrowRight,
+  Users
+} from "lucide-react";
 
 interface DecodedVehicle {
   vin: string;
@@ -120,6 +137,23 @@ export default function Home() {
   const [scanProgress, setScanProgress] = useState(0);
   const [scanStageIndex, setScanStageIndex] = useState(0);
 
+  // Manual & Detected Vehicle Attributes
+  const [manualYear, setManualYear] = useState<string>("");
+  const [manualMake, setManualMake] = useState<string>("");
+  const [manualModel, setManualModel] = useState<string>("");
+  const [manualTrim, setManualTrim] = useState<string>("");
+  const [manualBody, setManualBody] = useState<string>("Sedan");
+  const [manualTransmission, setManualTransmission] = useState<string>("Automatic");
+  const [manualFuel, setManualFuel] = useState<string>("Gasoline");
+  const [damageNotes, setDamageNotes] = useState<string>("");
+
+  // Two-Stage Gated Modals State
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isLeadCaptureModalOpen, setIsLeadCaptureModalOpen] = useState(false);
+  const [pendingVehicle, setPendingVehicle] = useState<VehicleData | null>(null);
+  const [capturedLeadId, setCapturedLeadId] = useState<string | null>(null);
+  const [isPreIdentifying, setIsPreIdentifying] = useState(false);
+
   // Initialize theme (Default: Light Mode)
   useEffect(() => {
     try {
@@ -201,6 +235,13 @@ export default function Home() {
       }
 
       setDecodedVehicle(data);
+      if (data) {
+        if (data.year) setManualYear(String(data.year));
+        if (data.make) setManualMake(data.make);
+        if (data.model) setManualModel(data.model);
+        if (data.trim) setManualTrim(data.trim);
+        if (data.bodyClass) setManualBody(data.bodyClass);
+      }
     } catch (err: any) {
       setDecodedVehicle(null);
       setVinError(err.message || 'Could not verify VIN in NHTSA database.');
@@ -278,7 +319,136 @@ export default function Home() {
     });
   };
 
-  const handleAnalyze = async () => {
+
+  const handleLoadSamplePhotos = async () => {
+    try {
+      const res = await fetch("/sample-damage.jpg");
+      if (res.ok) {
+        const blob = await res.blob();
+        const file = new File([blob], "sample-collision.jpg", { type: "image/jpeg" });
+        setFiles([file]);
+        setPreviewUrls([URL.createObjectURL(file)]);
+        setError(null);
+      }
+    } catch (err) {
+      console.warn("Could not load sample photo:", err);
+    }
+  };
+
+  const handleInitiateEstimate = async () => {
+    setError(null);
+
+    if (files.length === 0) {
+      setError("Please upload at least one photo of the vehicle damage.");
+      return;
+    }
+
+    const cleanVin = vin.trim().toUpperCase();
+    if (cleanVin && cleanVin.length !== 17) {
+      setError("If providing a VIN, it must be exactly 17 characters (or clear the field).");
+      return;
+    }
+
+    // If vehicle is already known from VIN decode or manual inputs
+    if (decodedVehicle || (manualMake && manualModel)) {
+      setPendingVehicle({
+        make: decodedVehicle?.make || manualMake,
+        model: decodedVehicle?.model || manualModel,
+        year: decodedVehicle?.year || manualYear || "2022",
+        trim: decodedVehicle?.trim || manualTrim || null,
+        bodyClass: decodedVehicle?.bodyClass || manualBody || "Sedan",
+        transmission: manualTransmission,
+        fuelType: manualFuel,
+        vin: cleanVin || null,
+        source: decodedVehicle ? "US NHTSA Registry" : "Customer Specified",
+      });
+      setIsConfirmModalOpen(true);
+      return;
+    }
+
+    // Otherwise, fast pre-identification with the primary photo
+    setIsPreIdentifying(true);
+    try {
+      const firstBase64 = await compressImageForAi(files[0], 1024, 0.75);
+      const res = await fetch("/api/vehicle/pre-identify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          image: firstBase64,
+          vin: cleanVin || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && data.vehicle) {
+        const v = data.vehicle;
+        setPendingVehicle({
+          make: v.make,
+          model: v.model,
+          year: v.year || v.approxYear || "2022",
+          trim: v.trim || null,
+          bodyClass: v.bodyClass || "Sedan",
+          transmission: manualTransmission,
+          fuelType: manualFuel,
+          vin: cleanVin || null,
+          source: data.source || "AI Vision Identification",
+        });
+        if (!manualMake) setManualMake(v.make);
+        if (!manualModel) setManualModel(v.model);
+        if (!manualYear) setManualYear(String(v.year || "2022"));
+        if (!manualBody) setManualBody(v.bodyClass || "Sedan");
+      } else {
+        setPendingVehicle({
+          make: "Toyota",
+          model: "Camry",
+          year: 2022,
+          trim: "SE",
+          bodyClass: "Sedan",
+          transmission: manualTransmission,
+          fuelType: manualFuel,
+          vin: cleanVin || null,
+          source: "Estimated Profile",
+        });
+      }
+    } catch (err) {
+      setPendingVehicle({
+        make: "Toyota",
+        model: "Camry",
+        year: 2022,
+        trim: "SE",
+        bodyClass: "Sedan",
+        transmission: manualTransmission,
+        fuelType: manualFuel,
+        vin: cleanVin || null,
+        source: "Default Profile",
+      });
+    } finally {
+      setIsPreIdentifying(false);
+      setIsConfirmModalOpen(true);
+    }
+  };
+
+  const handleConfirmVehicle = () => {
+    setIsConfirmModalOpen(false);
+    setIsLeadCaptureModalOpen(true);
+  };
+
+  const handleEditVehicle = () => {
+    setIsConfirmModalOpen(false);
+    const el = document.getElementById("vehicle-attributes-section");
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      const makeInput = document.getElementById("manual-make-input");
+      if (makeInput) makeInput.focus();
+    }
+  };
+
+  const handleLeadCaptured = (leadId: string) => {
+    setCapturedLeadId(leadId);
+    setIsLeadCaptureModalOpen(false);
+    handleAnalyze(leadId);
+  };
+
+  const handleAnalyze = async (overrideLeadId?: string) => {
     const cleanVin = vin.trim().toUpperCase();
 
     if (cleanVin && cleanVin.length !== 17) {
@@ -305,7 +475,15 @@ export default function Home() {
         body: JSON.stringify({
           images: base64Images,
           vin: cleanVin.length === 17 ? cleanVin : undefined,
-          vehicle: decodedVehicle,
+          vehicle: decodedVehicle || {
+            make: manualMake || undefined,
+            model: manualModel || undefined,
+            year: manualYear ? parseInt(manualYear, 10) : undefined,
+            trim: manualTrim || undefined,
+            bodyClass: manualBody || undefined,
+          },
+          leadId: overrideLeadId || capturedLeadId || undefined,
+          notes: damageNotes || undefined,
         }),
       });
 
@@ -391,6 +569,18 @@ export default function Home() {
               <span className="text-blue-600 dark:text-blue-400 font-mono text-[11px]">ISO 3779</span>
             </div>
 
+            {/* SHOP ADMIN CRM LINK */}
+            <Link
+              href="/admin"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-cyan-500/30 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-700 dark:text-cyan-300 font-bold text-xs transition-colors shadow-sm cursor-pointer"
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Shop Admin CRM</span>
+              <span className="bg-cyan-600 text-white dark:bg-cyan-400 dark:text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded-full">
+                LEADS
+              </span>
+            </Link>
+
             {/* LIGHT / DARK MODE SWITCHER */}
             <button
               type="button"
@@ -437,7 +627,7 @@ export default function Home() {
       </header>
 
       {/* 2. MAIN APPLICATION WORKSPACE */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 print:max-w-none print:w-full print:p-0 print:m-0">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 print:max-w-none print:w-full print:p-0 print:m-0">
         {/* ERROR MESSAGE NOTIFICATION */}
         {error && (
           <div className="mb-6 bg-red-50 dark:bg-red-950/80 border border-red-200 dark:border-red-500/80 text-red-800 dark:text-red-200 rounded-2xl p-4 flex items-center justify-between shadow-sm dark:shadow-lg">
@@ -455,216 +645,446 @@ export default function Home() {
 
         {/* STEP 1: CLEAN UPLOAD & INTAKE (ZERO DEVELOPER NOISE) */}
         {step === 'upload' && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* HERO TITLE */}
             <div className="text-center sm:text-left space-y-1.5 pb-2">
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold mb-1">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>US Collision Intelligence Platform</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
                 Enterprise Auto Collision Appraisal
               </h1>
-              <p className="text-slate-600 dark:text-slate-400 text-sm max-w-2xl leading-relaxed">
-                Upload vehicle damage imagery for automated forensic part identification, OEM catalog matching, and standardized collision repair estimates.
+              <p className="text-slate-600 dark:text-slate-400 text-sm max-w-3xl leading-relaxed">
+                Upload collision photos and vehicle details for automated forensic part identification, OEM catalog matching, and standardized collision repair estimates.
               </p>
             </div>
 
-            {/* SECTION 1: VIN INPUT */}
-            <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-6 shadow-sm dark:shadow-xl border border-slate-200/90 dark:border-slate-800/80 backdrop-blur-md space-y-4 transition-colors duration-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-md shadow-blue-600/30">
-                    1
-                  </span>
-                  <label htmlFor="vin-input" className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-2">
-                    Vehicle Identification Number (VIN)
-                    <span className="text-xs font-extrabold bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded-full uppercase tracking-wider">
-                      * Required
-                    </span>
-                  </label>
-                </div>
-                <span className="text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 px-2.5 py-0.5 rounded-md">
-                  NHTSA vPIC Verification
-                </span>
-              </div>
-
-              <div className="space-y-2.5">
-                <div className="relative">
-                  <input
-                    id="vin-input"
-                    type="text"
-                    maxLength={17}
-                    value={vin}
-                    onChange={(e) => handleVinLookup(e.target.value)}
-                    placeholder="Enter mandatory 17-character VIN (or select quick sample below)"
-                    className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/80 rounded-xl font-mono text-base tracking-wider uppercase text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all pr-12 shadow-inner"
-                  />
-                  <div className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center">
-                    {isDecodingVin ? (
-                      <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                    ) : decodedVehicle ? (
-                      <span className="text-emerald-600 dark:text-emerald-400 font-bold text-lg" title="VIN Verified">✓</span>
-                    ) : null}
-                  </div>
-                </div>
-
-                {vinError && <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">{vinError}</p>}
-
-                {decodedVehicle && (
-                  <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/40 rounded-xl p-3.5 flex items-center justify-between animate-in fade-in">
+            {/* TWO COLUMN INTAKE GRID (MATCHING CARFIX.AM STANDARD) */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+              
+              {/* LEFT COLUMN: PHOTO DROPZONE & PREVIEWS & MAIN CTA */}
+              <div className="lg:col-span-6 space-y-4">
+                <div className="bg-white dark:bg-slate-900/70 rounded-2xl p-6 shadow-sm dark:shadow-xl border border-slate-200/90 dark:border-slate-800/80 backdrop-blur-md space-y-4">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-600/30 border border-emerald-200 dark:border-emerald-500/50 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-bold">
-                        ✓
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-900 dark:text-white">
-                          {decodedVehicle.year} {decodedVehicle.make} {decodedVehicle.model} {decodedVehicle.trim || ''}
-                        </p>
-                        <p className="text-xs text-emerald-800 dark:text-emerald-300/90 font-medium">
-                          {decodedVehicle.bodyClass || 'Passenger Car'} • US DOT (NHTSA) Official Registry Record
-                        </p>
-                      </div>
+                      <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-md shadow-blue-600/30">
+                        1
+                      </span>
+                      <h2 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-1.5">
+                        <Camera className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        Damage Photos
+                        <span className="text-red-500 text-xs font-bold">*</span>
+                      </h2>
                     </div>
-                    <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/40 font-mono text-xs px-2.5 py-1 rounded-md font-semibold">
-                      VERIFIED
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                      {previewUrls.length}/10 photos
                     </span>
                   </div>
-                )}
 
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  A 17-digit VIN is strictly required for regulatory US collision estimating, NHTSA vPIC verification, and legal repair order generation.
-                </p>
+                  {/* DROPZONE (if 0 photos) */}
+                  {previewUrls.length === 0 ? (
+                    <div>
+                      <label className="border-2 border-dashed border-slate-300 dark:border-slate-700/80 hover:border-blue-500 dark:hover:border-blue-500 bg-slate-50/70 hover:bg-blue-50/40 dark:bg-slate-950/50 dark:hover:bg-blue-600/5 rounded-2xl p-8 sm:p-10 flex flex-col items-center justify-center cursor-pointer transition-all group">
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/png, image/jpeg, image/webp"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                        <div className="w-14 h-14 bg-slate-100 group-hover:bg-blue-100 dark:bg-slate-800/80 dark:group-hover:bg-blue-600/20 text-slate-500 group-hover:text-blue-600 dark:text-slate-400 dark:group-hover:text-blue-400 rounded-2xl flex items-center justify-center mb-3 transition-colors shadow-inner">
+                          <Camera className="w-7 h-7" />
+                        </div>
+                        <div className="text-center space-y-1">
+                          <span className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors block">
+                            Click to upload damage photos or drag & drop
+                          </span>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">
+                            Supports PNG, JPG, WebP • Front, Rear, Side angles, Close-ups
+                          </p>
+                        </div>
+                      </label>
 
-                {/* Quick Sample VIN Selector */}
-                <div className="pt-1 flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Quick Load Sample:</span>
-                  {SAMPLE_VINS.map((sample) => (
-                    <button
-                      key={sample.vin}
-                      type="button"
-                      onClick={() => handleVinLookup(sample.vin)}
-                      className={`text-xs font-medium px-2.5 py-1 rounded-lg transition-all border cursor-pointer ${
-                        vin === sample.vin
-                          ? 'bg-blue-600 text-white border-blue-500 shadow-sm shadow-blue-500/30'
-                          : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-950/60 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
-                      }`}
-                    >
-                      {sample.label}
-                    </button>
-                  ))}
-                  {vin.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setVin('');
-                        setDecodedVehicle(null);
-                        setVinError(null);
-                      }}
-                      className="text-xs text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 px-2 py-1 underline cursor-pointer"
-                    >
-                      Clear VIN
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* SECTION 2: PHOTO UPLOAD */}
-            <div className="bg-white dark:bg-slate-900/60 rounded-2xl p-6 shadow-sm dark:shadow-xl border border-slate-200/90 dark:border-slate-800/80 backdrop-blur-md space-y-4 transition-colors duration-200">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-md shadow-blue-600/30">
-                    2
-                  </span>
-                  <h2 className="font-bold text-slate-900 dark:text-white text-base">
-                    Upload Damage Imagery <span className="text-red-600 dark:text-red-400">* Required</span>
-                  </h2>
-                </div>
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Up to 10 photos</span>
-              </div>
-
-              <div>
-                <label className="border-2 border-dashed border-slate-300 dark:border-slate-700/80 hover:border-blue-500 dark:hover:border-blue-500 bg-slate-50/70 hover:bg-blue-50/40 dark:bg-slate-950/50 dark:hover:bg-blue-600/5 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all group">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/png, image/jpeg, image/webp"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                  <div className="w-14 h-14 bg-slate-100 group-hover:bg-blue-100 dark:bg-slate-800/80 dark:group-hover:bg-blue-600/20 text-slate-500 group-hover:text-blue-600 dark:text-slate-400 dark:group-hover:text-blue-400 rounded-2xl flex items-center justify-center mb-3 transition-colors shadow-inner">
-                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.75}
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </div>
-                  <div className="text-center">
-                    <span className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                      Click to upload damage photos or drag & drop
-                    </span>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      Supports PNG, JPG, WebP • Front, Rear, Side angles, Close-ups, Brand badges
-                    </p>
-                  </div>
-                </label>
-              </div>
-
-              {previewUrls.length > 0 && (
-                <div className="space-y-3 pt-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Uploaded Damage Photos ({previewUrls.length})
-                  </h3>
-                  <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
-                    {previewUrls.map((url, i) => (
-                      <div
-                        key={i}
-                        className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/80 group bg-slate-100 dark:bg-slate-900 shadow-sm"
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={url} alt={`Damage photo ${i + 1}`} className="object-cover w-full h-full" />
+                      {/* Quick Sample Photo Loader */}
+                      <div className="mt-3 flex items-center justify-center gap-2">
+                        <span className="text-xs text-slate-400">Want to test quickly?</span>
                         <button
                           type="button"
-                          onClick={() => removePhoto(i)}
-                          className="absolute top-1.5 right-1.5 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow-md cursor-pointer transition-colors"
-                          title="Remove photo"
+                          onClick={handleLoadSamplePhotos}
+                          className="text-xs text-blue-600 dark:text-blue-400 font-bold hover:underline cursor-pointer flex items-center gap-1"
                         >
-                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
+                          Load Sample Damage Photo
                         </button>
                       </div>
-                    ))}
+                    </div>
+                  ) : (
+                    /* PREVIEWS WITH GREEN BASIC BADGE ON 1ST PHOTO AND + TILE */
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {previewUrls.map((url, i) => (
+                          <div
+                            key={i}
+                            className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700/80 group bg-slate-100 dark:bg-slate-900 shadow-sm"
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={url} alt={`Damage photo ${i + 1}`} className="object-cover w-full h-full" />
+                            
+                            {/* FIRST PHOTO: GREEN BASIC COVER BADGE (MATCHING CARFIX.AM) */}
+                            {i === 0 && (
+                              <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-600 text-white shadow-md shadow-emerald-950/30">
+                                BASIC
+                              </span>
+                            )}
+
+                            {/* DELETE BUTTON */}
+                            <button
+                              type="button"
+                              onClick={() => removePhoto(i)}
+                              className="absolute top-2 right-2 bg-slate-900/80 hover:bg-red-600 text-white rounded-full p-1.5 shadow-md cursor-pointer transition-colors"
+                              title="Remove photo"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* + ADD PHOTO TILE */}
+                        {previewUrls.length < 10 && (
+                          <label className="aspect-square rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700/80 hover:border-blue-500 dark:hover:border-blue-500 bg-slate-50/50 hover:bg-blue-50/30 dark:bg-slate-950/40 dark:hover:bg-blue-600/5 flex flex-col items-center justify-center cursor-pointer transition-colors group">
+                            <input
+                              type="file"
+                              multiple
+                              accept="image/png, image/jpeg, image/webp"
+                              onChange={handleFileChange}
+                              className="hidden"
+                            />
+                            <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-slate-800 group-hover:bg-blue-500 group-hover:text-white text-slate-500 dark:text-slate-400 flex items-center justify-center mb-1.5 transition-colors">
+                              <Plus className="w-5 h-5" />
+                            </div>
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                              Add photo
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              ({10 - previewUrls.length} left)
+                            </span>
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PRIMARY CTA: GET DAMAGE ESTIMATE */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={handleInitiateEstimate}
+                      disabled={previewUrls.length === 0 || isPreIdentifying}
+                      className={`w-full py-4 px-6 rounded-xl font-bold text-base shadow-xl transition-all flex items-center justify-center gap-2.5 ${
+                        previewUrls.length > 0 && !isPreIdentifying
+                          ? "bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 hover:from-blue-500 hover:via-indigo-500 hover:to-cyan-500 text-white shadow-blue-600/30 ring-1 ring-white/20 cursor-pointer hover:shadow-blue-500/40"
+                          : "bg-slate-200 text-slate-400 dark:bg-slate-900 dark:text-slate-600 cursor-not-allowed border border-slate-300 dark:border-slate-800"
+                      }`}
+                    >
+                      {isPreIdentifying ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>Identifying Vehicle in Photos...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-5 h-5" />
+                          <span>
+                            Get Damage Estimate
+                            {previewUrls.length > 0 ? ` (${previewUrls.length} ${previewUrls.length === 1 ? "photo" : "photos"})` : ""}
+                          </span>
+                          <ArrowRight className="w-4 h-4 ml-1" />
+                        </>
+                      )}
+                    </button>
+
+                    <div className="flex items-center justify-center gap-2 pt-3 text-[11px] text-slate-500 dark:text-slate-400">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>256-Bit SSL Encrypted • No Login Required • Free Instant Report</span>
+                    </div>
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
 
-            {/* SUBMIT BUTTON */}
-            <button
-              type="button"
-              onClick={handleAnalyze}
-              disabled={previewUrls.length === 0}
-              className={`w-full py-4 rounded-xl font-bold text-lg shadow-xl transition-all flex items-center justify-center gap-2.5 ${
-                previewUrls.length > 0
-                  ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white shadow-blue-600/30 ring-1 ring-white/20 cursor-pointer hover:shadow-blue-500/40'
-                  : 'bg-slate-200 text-slate-400 dark:bg-slate-900 dark:text-slate-600 cursor-not-allowed border border-slate-300 dark:border-slate-800'
-              }`}
-            >
-              <svg className="w-5 h-5 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              {vin.trim().length === 17
-                ? 'Run AI Collision Assessment & NHTSA VIN Audit'
-                : 'Run AI Collision Assessment (Photo-Only)'}
-            </button>
-            <p className="text-center text-xs text-slate-400 dark:text-slate-500 font-medium">
-              {previewUrls.length === 0
-                ? '📷 Upload at least one damage photo to begin analysis'
-                : vin.trim().length === 17
-                ? '✓ 17-digit VIN verified for US NHTSA regulatory cross-audit'
-                : '💡 Tip: Enter a 17-character VIN above for NHTSA cross-verification, or proceed directly with AI photo assessment'}
-            </p>
+              {/* RIGHT COLUMN: VIN LOOKUP, RECOMMENDATION CARD, ATTRIBUTES, NOTES */}
+              <div className="lg:col-span-6 space-y-4">
+                <div className="bg-white dark:bg-slate-900/70 rounded-2xl p-6 shadow-sm dark:shadow-xl border border-slate-200/90 dark:border-slate-800/80 backdrop-blur-md space-y-5">
+                  
+                  {/* SECTION HEADER */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-6 h-6 rounded-full bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-md shadow-blue-600/30">
+                        2
+                      </span>
+                      <h2 className="font-bold text-slate-900 dark:text-white text-base flex items-center gap-1.5">
+                        <Car className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        Vehicle Specifications & VIN
+                      </h2>
+                    </div>
+                    <span className="text-xs font-semibold bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 text-emerald-700 dark:text-emerald-400 px-2.5 py-0.5 rounded-md">
+                      NHTSA vPIC
+                    </span>
+                  </div>
+
+                  {/* 1. 17-CHAR VIN LOOKUP WITH DECODE BUTTON */}
+                  <div className="space-y-2">
+                    <label htmlFor="vin-input" className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                      Vehicle Identification Number (VIN)
+                    </label>
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <input
+                          id="vin-input"
+                          type="text"
+                          maxLength={17}
+                          value={vin}
+                          onChange={(e) => handleVinLookup(e.target.value)}
+                          placeholder="Enter 17-character VIN"
+                          className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/80 rounded-xl font-mono text-sm tracking-wider uppercase text-slate-900 dark:text-white placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all shadow-inner"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center">
+                          {isDecodingVin ? (
+                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                          ) : decodedVehicle ? (
+                            <span className="text-emerald-500 font-bold" title="VIN Verified">✓</span>
+                          ) : null}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => handleVinLookup(vin)}
+                        disabled={isDecodingVin || vin.trim().length !== 17}
+                        className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-800 dark:disabled:text-slate-600 text-white font-bold text-xs shadow-sm transition-all cursor-pointer shrink-0"
+                      >
+                        Decode VIN
+                      </button>
+                    </div>
+
+                    {vinError && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                        {vinError}
+                      </p>
+                    )}
+
+                    {/* DECODED VEHICLE CONFIRMATION */}
+                    {decodedVehicle && (
+                      <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-500/40 rounded-xl p-3 flex items-center justify-between">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-600/30 border border-emerald-200 dark:border-emerald-500/50 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-bold text-xs shrink-0">
+                            ✓
+                          </div>
+                          <div className="truncate">
+                            <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                              {decodedVehicle.year} {decodedVehicle.make} {decodedVehicle.model} {decodedVehicle.trim || ""}
+                            </p>
+                            <p className="text-[11px] text-emerald-800 dark:text-emerald-300/90 font-medium">
+                              US DOT NHTSA Registry Verified
+                            </p>
+                          </div>
+                        </div>
+                        <span className="bg-emerald-100 dark:bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 font-mono text-[10px] px-2 py-0.5 rounded font-bold shrink-0">
+                          VERIFIED
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Quick Sample VIN Selector */}
+                    <div className="pt-1 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[11px] font-medium text-slate-400">Sample:</span>
+                      {SAMPLE_VINS.map((sample) => (
+                        <button
+                          key={sample.vin}
+                          type="button"
+                          onClick={() => handleVinLookup(sample.vin)}
+                          className={`text-[11px] font-medium px-2 py-0.5 rounded-lg transition-all border cursor-pointer ${
+                            vin === sample.vin
+                              ? "bg-blue-600 text-white border-blue-500"
+                              : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-950/60 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800"
+                          }`}
+                        >
+                          {sample.make}
+                        </button>
+                      ))}
+                      {vin.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setVin("");
+                            setDecodedVehicle(null);
+                            setVinError(null);
+                          }}
+                          className="text-[11px] text-slate-400 hover:text-red-500 px-1 underline cursor-pointer"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 2. VIN RECOMMENDATION ALERT CARD (MATCHING IMAGE 3) */}
+                  <div className="p-3.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/60 text-blue-900 dark:text-blue-200 text-xs flex items-start gap-3">
+                    <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                    <div className="space-y-0.5">
+                      <strong className="font-bold text-slate-900 dark:text-white block">
+                        Why enter your VIN?
+                      </strong>
+                      <p className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed">
+                        Entering your 17-character VIN allows our US NHTSA system to accurately decode factory options, trim levels, and query precise OEM part catalog numbers for your vehicle.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* 3. VEHICLE ATTRIBUTES (MANUAL OVERRIDE / CUSTOMIZATION) */}
+                  <div id="vehicle-attributes-section" className="space-y-3 pt-1 border-t border-slate-200/80 dark:border-slate-800/80">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Vehicle Attributes
+                    </h3>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                      {/* YEAR */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                          Year
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 2022"
+                          value={manualYear}
+                          onChange={(e) => setManualYear(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* MAKE */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                          Make
+                        </label>
+                        <input
+                          id="manual-make-input"
+                          type="text"
+                          placeholder="e.g. Toyota"
+                          value={manualMake}
+                          onChange={(e) => setManualMake(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* MODEL */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                          Model
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Camry"
+                          value={manualModel}
+                          onChange={(e) => setManualModel(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* TRIM */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                          Trim / Edition
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. SE / XLE"
+                          value={manualTrim}
+                          onChange={(e) => setManualTrim(e.target.value)}
+                          className="w-full px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* BODY CLASS */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                          Body Class
+                        </label>
+                        <select
+                          value={manualBody}
+                          onChange={(e) => setManualBody(e.target.value)}
+                          className="w-full px-2.5 py-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          <option value="Sedan">Sedan</option>
+                          <option value="SUV">SUV</option>
+                          <option value="Coupe">Coupe</option>
+                          <option value="Pickup Truck">Pickup Truck</option>
+                          <option value="Hatchback">Hatchback</option>
+                          <option value="Van / Minivan">Van / Minivan</option>
+                          <option value="Convertible">Convertible</option>
+                          <option value="Wagon">Wagon</option>
+                        </select>
+                      </div>
+
+                      {/* TRANSMISSION */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                          Transmission
+                        </label>
+                        <select
+                          value={manualTransmission}
+                          onChange={(e) => setManualTransmission(e.target.value)}
+                          className="w-full px-2.5 py-2 rounded-lg bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/80 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                          <option value="Automatic">Automatic</option>
+                          <option value="Manual">Manual</option>
+                          <option value="CVT">CVT</option>
+                          <option value="Dual-Clutch">Dual-Clutch</option>
+                        </select>
+                      </div>
+
+                      {/* FUEL TYPE */}
+                      <div className="col-span-2 sm:col-span-3">
+                        <label className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                          Fuel Type
+                        </label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {["Gasoline", "Hybrid", "Electric", "Diesel"].map((fuel) => (
+                            <button
+                              key={fuel}
+                              type="button"
+                              onClick={() => setManualFuel(fuel)}
+                              className={`py-1.5 px-2 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+                                manualFuel === fuel
+                                  ? "bg-blue-600 text-white border-blue-500 shadow-sm"
+                                  : "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-700/80 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              }`}
+                            >
+                              {fuel}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 4. DAMAGE NOTES TEXTAREA */}
+                  <div className="space-y-1.5 pt-1 border-t border-slate-200/80 dark:border-slate-800/80">
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                      Damage Description / Notes (Optional)
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={damageNotes}
+                      onChange={(e) => setDamageNotes(e.target.value)}
+                      placeholder="Describe how the accident occurred or specific parts damaged (e.g. cracked front bumper, scratch on door)..."
+                      className="w-full p-3 bg-slate-50 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-700/80 rounded-xl text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
 
             {/* MILLION-DOLLAR ENTERPRISE SAAS PRODUCT DEMO SHOWCASE */}
             <div className="pt-6 sm:pt-8">
@@ -735,10 +1155,10 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          
           </div>
         )}
 
-        {/* STEP 2: PREMIUM HIGH-TECH SCANNING SCREEN */}
         {step === 'processing' && (
           <div className="bg-white/95 dark:bg-slate-900/70 backdrop-blur-xl rounded-3xl p-8 sm:p-12 shadow-xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-slate-200 dark:border-slate-800/80 my-6 relative overflow-hidden transition-colors duration-200">
             {/* SCANNING LASER SWEEP LINE OVER CARD */}
@@ -1796,6 +2216,29 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* TWO-STAGE GATED MODAL PIPELINE */}
+      <ConfirmCarModal
+        isOpen={isConfirmModalOpen}
+        vehicle={pendingVehicle}
+        primaryPhotoUrl={previewUrls[0] || null}
+        onConfirm={handleConfirmVehicle}
+        onEdit={handleEditVehicle}
+        onClose={() => setIsConfirmModalOpen(false)}
+      />
+
+      <LeadCaptureModal
+        isOpen={isLeadCaptureModalOpen}
+        vehicle={pendingVehicle}
+        imageUrls={previewUrls}
+        notes={damageNotes}
+        onSuccess={handleLeadCaptured}
+        onBack={() => {
+          setIsLeadCaptureModalOpen(false);
+          setIsConfirmModalOpen(true);
+        }}
+        onClose={() => setIsLeadCaptureModalOpen(false)}
+      />
     </div>
   );
 }

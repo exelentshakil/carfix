@@ -6,13 +6,15 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { calculateCostEstimate, lookupOemPart } from '@/lib/pricingRules';
 import { decodeVinWithNhtsa, DecodedVehicle } from '@/lib/vinService';
 import { evaluateVehicleDiscrepancy, DiscrepancyReport, VisualVehicleInfo, VinVehicleInfo } from '@/lib/discrepancy';
+import { supabaseAdmin } from '@/lib/supabase';
+import { updateMockLead } from '@/lib/leadStore';
 
 // Initialize Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(request: Request) {
   try {
-    const { images, vin, vehicle: clientVehicle } = await request.json();
+    const { images, vin, vehicle: clientVehicle, leadId } = await request.json();
 
     if (!images || !Array.isArray(images) || images.length === 0) {
       return NextResponse.json({ error: 'At least one damage photo is required.' }, { status: 400 });
@@ -59,7 +61,11 @@ export async function POST(request: Request) {
     // Fallback if no Gemini API key configured
     if (!process.env.GEMINI_API_KEY) {
       console.warn('GEMINI_API_KEY is not set. Returning simulated collision and discrepancy data.');
-      return NextResponse.json(getMockResponse(cleanVin, vinVehicle));
+      const mockResp = getMockResponse(cleanVin, vinVehicle);
+      if (leadId) {
+        updateLeadWithEstimate(leadId, mockResp.id, mockResp.costRangeLow, mockResp.costRangeHigh, mockResp.findings);
+      }
+      return NextResponse.json(mockResp);
     }
 
     const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.5-flash' });
@@ -237,8 +243,13 @@ export async function POST(request: Request) {
       };
     });
 
+    const analysisResultId = `est_${Date.now()}`;
+    if (leadId) {
+      updateLeadWithEstimate(leadId, analysisResultId, totalLow || 450, totalHigh || 850, processedFindings);
+    }
+
     return NextResponse.json({
-      id: `est_${Date.now()}`,
+      id: analysisResultId,
       vin: cleanVin,
       make: effectiveMake,
       model: effectiveModel,
@@ -275,6 +286,45 @@ export async function POST(request: Request) {
   } catch (error: any) {
     console.error('Error in analyze API:', error);
     return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+  }
+}
+
+
+async function updateLeadWithEstimate(
+  leadId: string,
+  analysisId: string,
+  costLow: number,
+  costHigh: number,
+  findings: any[]
+) {
+  try {
+    const summary = findings && findings.length > 0
+      ? findings.map(f => `${f.name || f.rawPartName || "Part"} (${f.severity})`).join(", ")
+      : "Visual collision analysis complete";
+
+    updateMockLead(leadId, {
+      estimatedCostLow: costLow,
+      estimatedCostHigh: costHigh,
+      analysisId: analysisId,
+      damageSummary: summary,
+      status: "ESTIMATING",
+    });
+
+    if (supabaseAdmin) {
+      await supabaseAdmin
+        .from("carfix_leads")
+        .update({
+          estimated_cost_low: costLow,
+          estimated_cost_high: costHigh,
+          analysis_id: analysisId,
+          damage_summary: summary,
+          status: "ESTIMATING",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", leadId);
+    }
+  } catch (err) {
+    console.error("Failed to backfill lead with estimate:", err);
   }
 }
 
