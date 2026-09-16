@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       }
 
       const model = genAI.getGenerativeModel({
-        model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+        model: process.env.GEMINI_MODEL || 'gemini-3.6-flash',
       });
 
       const base64Data = image.replace(/^data:image\/\w+;base64,/, '');

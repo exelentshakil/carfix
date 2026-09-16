@@ -1300,7 +1300,7 @@ export default function Home() {
                 <span>•</span>
                 <span>OEM Catalog: Seeded + Live API Pending</span>
                 <span>•</span>
-                <span>Labor Rate: $95.00/hr</span>
+                <span>Labor Rate: {siteConfig.laborRateBenchmark}</span>
               </div>
             </div>
           </div>
@@ -1310,7 +1310,7 @@ export default function Home() {
         {step === 'results' && result && (() => {
           const totalPartsCost = result.findings.reduce((acc, f) => acc + (f.basePartCost || Math.round(f.costLow * 0.6)), 0);
           const totalLaborHours = result.findings.reduce((acc, f) => acc + (f.laborHours || (f.severity === 'SEVERE' ? 7 : f.severity === 'MODERATE' ? 4 : 2)), 0);
-          const totalLaborCost = result.findings.reduce((acc, f) => acc + (f.laborCost || ((f.laborHours || (f.severity === 'SEVERE' ? 7 : f.severity === 'MODERATE' ? 4 : 2)) * 95)), 0);
+          const totalLaborCost = result.findings.reduce((acc, f) => acc + (f.laborCost || ((f.laborHours || (f.severity === 'SEVERE' ? 7 : f.severity === 'MODERATE' ? 4 : 2)) * siteConfig.laborRatePerHour)), 0);
 
           return (
             <>
@@ -1643,7 +1643,7 @@ export default function Home() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 lg:flex lg:flex-col gap-3 text-xs border-t lg:border-t-0 lg:border-l border-slate-800 pt-4 lg:pt-0 lg:pl-6">
                   <div>
                     <span className="text-slate-400 block text-[11px]">Collision Labor Rate</span>
-                    <span className="font-bold text-white text-sm">$95.00/hr <span className="text-[10px] font-normal text-slate-400">(US Benchmark)</span></span>
+                    <span className="font-bold text-white text-sm">{siteConfig.laborRateBenchmark} <span className="text-[10px] font-normal text-slate-400">(US Benchmark)</span></span>
                   </div>
                   <div>
                     <span className="text-slate-400 block text-[11px]">OEM Parts Catalog</span>
@@ -1659,7 +1659,7 @@ export default function Home() {
               </div>
 
               <div className="mt-5 pt-4 border-t border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400 gap-2">
-                <span>Standard US body shop collision repair matrix ($95/hr labor + OEM parts)</span>
+                <span>Standard US body shop collision repair matrix ({siteConfig.laborRateBenchmark} labor + OEM parts)</span>
                 {result.vin && (
                   <span className="font-mono text-blue-400">Audited against VIN: {result.vin}</span>
                 )}
@@ -1689,7 +1689,7 @@ export default function Home() {
 
                   const partCost = finding.basePartCost || Math.round(finding.costLow * 0.6);
                   const laborHours = finding.laborHours || (finding.severity === 'SEVERE' ? 7 : finding.severity === 'MODERATE' ? 4 : 2);
-                  const laborCost = finding.laborCost || laborHours * 95;
+                  const laborCost = finding.laborCost || laborHours * siteConfig.laborRatePerHour;
 
                   return (
                     <div
@@ -1756,7 +1756,7 @@ export default function Home() {
                           <span>•</span>
                           <span>
                             <span className="text-slate-400 dark:text-slate-500 print:text-slate-400">Labor:</span>{' '}
-                            <strong className="text-slate-900 dark:text-white print:text-slate-900">{laborHours} hrs</strong> @ $95/hr (
+                            <strong className="text-slate-900 dark:text-white print:text-slate-900">{laborHours} hrs</strong> @ {siteConfig.laborRateBenchmark} (
                             <strong className="text-slate-900 dark:text-white print:text-slate-900">${laborCost}</strong>)
                           </span>
                           <span>•</span>
@@ -1858,7 +1858,7 @@ export default function Home() {
                       </p>
                       <p>
                         <span className="font-bold text-slate-700">Labor Benchmark:</span>{' '}
-                        <span className="font-bold text-slate-950">$95.00/hr (US Matrix)</span>
+                        <span className="font-bold text-slate-950">{siteConfig.laborRateBenchmark} (US Matrix)</span>
                       </p>
                       <p>
                         <span className="font-bold text-slate-700">Audit Status:</span>{' '}
@@ -1996,7 +1996,7 @@ export default function Home() {
                 <div className="border border-slate-400 rounded-md overflow-hidden text-[10px]">
                   <div className="bg-slate-100 px-3 py-1 border-b border-slate-400 font-bold text-[9.5px] uppercase tracking-wider text-slate-800 flex justify-between">
                     <span>Section 4: Itemized Collision Damage & OEM Part Analysis ({result.findings.length} Components)</span>
-                    <span>Labor Benchmark: $95.00 / Hour</span>
+                    <span>Labor Benchmark: {siteConfig.laborRateBenchmark}</span>
                   </div>
                   <table className="w-full text-left border-collapse text-[10px]">
                     <thead>
@@ -2007,7 +2007,7 @@ export default function Home() {
                         <th className="py-1 px-2 border-r border-slate-300 w-32">OEM Part Number</th>
                         <th className="py-1 px-2 border-r border-slate-300">Forensic Damage Description & Repair Method</th>
                         <th className="py-1 px-2 border-r border-slate-300 w-16 text-right">Part ($)</th>
-                        <th className="py-1 px-2 border-r border-slate-300 w-24 text-center">Labor @ $95</th>
+                        <th className="py-1 px-2 border-r border-slate-300 w-24 text-center">Labor @ {siteConfig.laborRateBenchmark}</th>
                         <th className="py-1 px-2 w-24 text-right">Est. Range</th>
                       </tr>
                     </thead>
@@ -2015,7 +2015,7 @@ export default function Home() {
                       {result.findings.map((finding, idx) => {
                         const partCost = finding.basePartCost || Math.round(finding.costLow * 0.6);
                         const laborHours = finding.laborHours || (finding.severity === 'SEVERE' ? 7 : finding.severity === 'MODERATE' ? 4 : 2);
-                        const laborCost = finding.laborCost || laborHours * 95;
+                        const laborCost = finding.laborCost || laborHours * siteConfig.laborRatePerHour;
 
                         return (
                           <tr key={finding.id} className={idx % 2 === 1 ? 'bg-slate-50/50' : 'bg-white'}>
@@ -2092,7 +2092,7 @@ export default function Home() {
                     </div>
                     <div className="text-right text-[9.5px] text-slate-700 space-y-0.5">
                       <p><strong>OEM Parts Subtotal:</strong> ${totalPartsCost.toLocaleString()}</p>
-                      <p><strong>Collision Labor Subtotal:</strong> {totalLaborHours} Hours @ $95.00/hr (${totalLaborCost.toLocaleString()})</p>
+                      <p><strong>Collision Labor Subtotal:</strong> {totalLaborHours} Hours @ {siteConfig.laborRateBenchmark} (${totalLaborCost.toLocaleString()})</p>
                       <p><strong>Paint & Materials:</strong> Included in Standard US Collision Matrix</p>
                     </div>
                   </div>
@@ -2227,7 +2227,7 @@ export default function Home() {
             <div className="space-y-2.5">
               <h4 className="text-xs font-bold uppercase tracking-wider text-slate-900 dark:text-white">Collision Benchmarks</h4>
               <ul className="text-xs space-y-1.5 text-slate-500 dark:text-slate-400">
-                <li>• $95.00/hr National US Body Labor Rate</li>
+                <li>• {siteConfig.laborRateBenchmark} National US Body Labor Rate</li>
                 <li>• Mitchell / CCC ONE Damage Index Alignment</li>
                 <li>• Real-Time OEM Parts Registry</li>
                 <li>• I-CAR Gold Class Structural Protocols</li>

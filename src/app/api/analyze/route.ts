@@ -68,7 +68,7 @@ export async function POST(request: Request) {
       return NextResponse.json(mockResp);
     }
 
-    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-2.5-flash' });
+    const model = genAI.getGenerativeModel({ model: process.env.GEMINI_MODEL || 'gemini-3.6-flash' });
 
     // Convert base64 images to Gemini inlineData format
     const imageParts = images.map((base64Image: string) => {

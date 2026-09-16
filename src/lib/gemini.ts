@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 // Update this if the model is retired — check current model names at ai.google.dev
-const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 
 export const PART_BASE_COST: Record<string, number> = {
   bumper: 300, door: 500, fender: 250, hood: 400, trunk: 350,
